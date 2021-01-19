@@ -69,37 +69,39 @@ description: "Mint ~${yVaultReceivedAmount:yVAULT.decimals} ${yVAULT.symbol} usi
 ##### JSON
 ```json
 {
-   "name": "MINT_YDAI_USING_DAI_V1",
+   "name": "MINT_TO_YVAULT_V1",
    "variables": {
-      "daiAmount": "uint256"
+      "suppliedTokenAddress": "address",
+      "suppliedAmount": "uint256",
+      "yVaultAddress": "address"
    },
    "results": {
-      "yDaiReceivedAmount": "uint256"
+      "yVaultReceivedAmount": "uint256"
    },
    "definitions": [
-      "Token DAI 0x6B175474E89094C44Da98b954EedeAC495271d0F",
-      "Token yDAI 0xACd43E627e64355f1861cEC6d3a6688B31a6F952",
-      "Function mintYDAI yDAI deposit(uint256)"
+      "Token UNDERLYING suppliedTokenAddress",
+      "Token yVAULT yVaultAddress",
+      "Function mintYVault yVAULT deposit(uint256)"
    ],
    "inputs": [
       {
-         "DAI": "daiAmount"
+         "UNDERLYING": "suppliedAmount"
       }
    ],
    "actions": [
-      "yDAI balanceOf wallet => yDaiInitialAmount",
-      "DAI approve yDAI daiAmount",
-      "yDAI mintYDAI daiAmount",
-      "yDAI balanceOf wallet => yDaiFinalAmount"
+      "yVAULT balanceOf wallet => yVaultInitialAmount",
+      "UNDERLYING approve yVAULT suppliedAmount",
+      "yVAULT mintYVault suppliedAmount",
+      "yVAULT balanceOf wallet => yVaultFinalAmount"
    ],
    "operations": [
-      "yDaiFinalAmount - yDaiInitialAmount => yDaiReceivedAmount"
+      "yVaultFinalAmount - yVaultInitialAmount => yVaultReceivedAmount"
    ],
    "outputs": [
       {
-         "yDAI": "yDaiReceivedAmount"
+         "yVAULT": "yVaultReceivedAmount"
       }
    ],
-   "description": "Mint ~${yDaiReceivedAmount:yDAI.decimals} yDAI using ${daiAmount:DAI.decimals} Dai"
+   "description": "Mint ~${yVaultReceivedAmount:yVAULT.decimals} ${yVAULT.symbol} using ${suppliedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol}"
 }
 ```
