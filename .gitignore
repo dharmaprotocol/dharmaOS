@@ -1,0 +1,14 @@
+.DS_Store
+.cache/
+.vscode
+.idea/
+node_modules/
+private/
+build/
+.env
+yarn-error.log
+yarn.lock
+dump.rdb
+.env*
+redis.conf
+report.*
