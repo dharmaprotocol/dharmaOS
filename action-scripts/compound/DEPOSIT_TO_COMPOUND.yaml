@@ -1,0 +1,31 @@
+name: "DEPOSIT_TO_COMPOUND"
+
+variables:
+  suppliedTokenAddress: address
+  suppliedAmount: uint256
+  cTokenAddress: address
+
+results:
+  cTokenReceivedAmount: uint256
+
+definitions:
+ - Token UNDERLYING suppliedTokenAddress
+ - Token cTOKEN cTokenAddress
+ - Function mint cTOKEN mint(uint256) => uint256
+
+inputs:
+ - UNDERLYING: suppliedAmount
+
+actions:
+ - cTOKEN balanceOf wallet => cTokenInitialAmount
+ - UNDERLYING approve cTOKEN suppliedAmount
+ - cTOKEN mint suppliedAmount
+ - cTOKEN balanceOf wallet => cTokenFinalAmount
+
+operations:
+ - cTokenFinalAmount - cTokenInitialAmount => cTokenReceivedAmount
+
+outputs:
+ - cTOKEN: cTokenReceivedAmount
+
+description: "Mint ${cTokenReceivedAmount:cTOKEN.decimals} ${cTOKEN.symbol} using ${suppliedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol}"
