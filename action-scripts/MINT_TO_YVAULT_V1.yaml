@@ -1,0 +1,31 @@
+name: "MINT_TO_YVAULT_V1"
+
+variables:
+  suppliedTokenAddress: address
+  suppliedAmount: uint256
+  yVaultAddress: address
+
+results:
+  yVaultReceivedAmount: uint256
+
+definitions:
+ - Token UNDERLYING suppliedTokenAddress
+ - Token yVAULT yVaultAddress
+ - Function mintYVault yVAULT deposit(uint256)
+
+inputs:
+ - UNDERLYING: suppliedAmount
+
+actions:
+ - yVAULT balanceOf wallet => yVaultInitialAmount
+ - UNDERLYING approve yVAULT suppliedAmount
+ - yVAULT mintYVault suppliedAmount
+ - yVAULT balanceOf wallet => yVaultFinalAmount
+
+operations:
+ - yVaultFinalAmount - yVaultInitialAmount => yVaultReceivedAmount
+
+outputs:
+ - yVAULT: yVaultReceivedAmount
+
+description: "Mint ~${yVaultReceivedAmount:yVAULT.decimals} ${yVAULT.symbol} using ${suppliedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol}"

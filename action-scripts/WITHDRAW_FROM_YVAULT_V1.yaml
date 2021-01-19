@@ -1,0 +1,30 @@
+name: "WITHDRAW_FROM_YVAULT_V1"
+
+variables:
+  receivedTokenAddress: address
+  yVaultAddress: address
+  yVaultAmount: uint256
+
+results:
+  receivedAmount: uint256
+
+definitions:
+ - Token UNDERLYING receivedTokenAddress
+ - Token yVAULT yVaultAddress
+ - Function redeemYVault yVAULT withdraw(uint256)
+
+inputs:
+ - yVAULT: yVaultAmount
+
+actions:
+ - UNDERLYING balanceOf wallet => initialReceivedAmount
+ - yVAULT redeemYVault yVaultAmount
+ - UNDERLYING balanceOf wallet => finalReceivedAmount
+
+operations:
+ - finalReceivedAmount - initialReceivedAmount => receivedAmount
+
+outputs:
+ - UNDERLYING: receivedAmount
+
+description: "Withdraw ${receivedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol} using ${yVaultAmount:yVAULT.decimals} ${yVAULT.symbol}"
