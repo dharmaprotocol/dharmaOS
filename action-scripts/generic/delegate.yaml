@@ -1,0 +1,24 @@
+name: "DELEGATE_VOTING"
+
+variables:
+  governanceTokenAddress: address
+  delegateAddress: address
+
+results:
+  delegatedTokens: uint256
+
+definitions:
+ - Token GOVERNANCE governanceTokenAddress
+ - Function delegate GOVERNANCE delegate(address)
+
+inputs:
+
+actions:
+ - GOVERNANCE delegate delegateAddress
+ - GOVERNANCE balanceOf wallet => delegatedTokens
+
+operations:
+
+outputs:
+
+description: "Delegate ${delegatedTokens:GOVERNANCE.decimals} ${GOVERNANCE.symbol} to ${delegateAddress}"
