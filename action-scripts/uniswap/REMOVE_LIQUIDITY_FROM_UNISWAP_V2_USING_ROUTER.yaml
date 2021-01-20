@@ -12,17 +12,11 @@ definitions:
  - Token TOKEN_B tokenBAddress
  - Token LIQUIDITY_TOKEN liquidityTokenAddress
  - Contract UNISWAP_ROUTER 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
- - Function removeLiquidity UNISWAP_ROUTER addLiquidity(address, address, uint256, uint256, uint256, uint256, address, uint256) => (uint256, uint256, uint256)
-
-inputs:
-  - TOKEN_A: amountADesired
-  - TOKEN_B: amountBDesired
-  - TOKEN_A: amountAMin
-  - TOKEN_B: amountBMin
+ - Function removeLiquidity UNISWAP_ROUTER removeLiquidity(address, address, uint256, uint256, uint256, address, uint256) => (uint256, uint256, uint256)
 
 actions:
  - LIQUIDITY_TOKEN approve UNISWAP_ROUTER liquidityAmount
- - UNISWAP_ROUTER removeLiquidity tokenAAddress tokenBAddress liquidityAmount amountAMin amountBMin wallet deadline => receivedAmountA receivedAmountB
+ - UNISWAP_ROUTER removeLiquidity tokenAAddress tokenBAddress liquidityAmount amountAMin amountBMin wallet MAX => receivedAmountA receivedAmountB
 
 results:
   receivedAmountA: uint256
