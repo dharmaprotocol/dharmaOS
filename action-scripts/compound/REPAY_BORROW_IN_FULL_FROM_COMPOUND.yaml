@@ -1,0 +1,25 @@
+name: "REPAY_BORROW_IN_FULL_FROM_COMPOUND"
+
+variables:
+  repayedTokenAddress: address
+  cTokenAddress: address
+
+results:
+
+definitions:
+ - Token UNDERLYING repayedTokenAddress
+ - Token cTOKEN cTokenAddress
+ - Function repay cTOKEN repayBorrow(uint256) => uint256
+
+inputs:
+ - UNDERLYING: MAX
+
+actions:
+ - UNDERLYING approve cTOKEN MAX
+ - cTOKEN repay MAX
+
+operations:
+
+outputs:
+
+description: "Repay ${UNDERLYING.symbol} borrows in full to ${cTOKEN.symbol}"

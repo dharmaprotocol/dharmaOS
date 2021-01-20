@@ -1,0 +1,22 @@
+name: "ENTER_COMPOUND_MARKET"
+
+variables:
+  cTokenAddress: address
+
+results:
+
+definitions:
+ - Token cTOKEN cTokenAddress
+ - Contract COMPTROLLER 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B
+ - Function enterMarket COMPTROLLER enterMarkets(address[]) => uint256[]
+
+inputs:
+
+actions:
+ - COMPTROLLER enterMarket [cTokenAddress]
+
+operations:
+
+outputs:
+
+description: "Entered ${cTOKEN.symbol} market — it may now be used as collateral for borrowing"

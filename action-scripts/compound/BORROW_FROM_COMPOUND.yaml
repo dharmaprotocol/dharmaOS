@@ -1,0 +1,28 @@
+name: "BORROW_FROM_COMPOUND"
+
+variables:
+  borrowedTokenAddress: address
+  cTokenAddress: address
+  borrowedAmount: uint256
+
+results:
+  borrowBalance: uint256
+
+definitions:
+ - Token UNDERLYING borrowedTokenAddress
+ - Token cTOKEN cTokenAddress
+ - Function borrow cTOKEN borrow(uint256) => uint256
+ - Function borrowBalanceCurrent cTOKEN borrowBalanceCurrent(address) => uint256
+
+inputs:
+
+actions:
+ - cTOKEN borrow borrowedAmount
+ - cTOKEN borrowBalanceCurrent wallet => borrowBalance
+
+operations:
+
+outputs:
+ - UNDERLYING: borrowedAmount
+
+description: "Borrow ${borrowedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol} from ${cTOKEN.symbol} — total borrow balance of ${borrowBalance:UNDERLYING.decimals}"

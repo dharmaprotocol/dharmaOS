@@ -1,0 +1,29 @@
+name: "REPAY_BORROW_FROM_COMPOUND"
+
+variables:
+  repayedTokenAddress: address
+  cTokenAddress: address
+  repaidAmount: uint256
+
+results:
+  borrowBalance: uint256
+
+definitions:
+ - Token UNDERLYING repayedTokenAddress
+ - Token cTOKEN cTokenAddress
+ - Function repay cTOKEN repayBorrow(uint256) => uint256
+ - Function borrowBalanceCurrent cTOKEN borrowBalanceCurrent(address) => uint256
+
+inputs:
+ - UNDERLYING: repaidAmount
+
+actions:
+ - UNDERLYING approve cTOKEN repaidAmount
+ - cTOKEN repay repaidAmount
+ - cTOKEN borrowBalanceCurrent wallet => borrowBalance
+
+operations:
+
+outputs:
+
+description: "Repay ${repaidAmount:UNDERLYING.decimals} ${UNDERLYING.symbol} to ${cTOKEN.symbol} — total borrow balance of ${borrowBalance:UNDERLYING.decimals}"
