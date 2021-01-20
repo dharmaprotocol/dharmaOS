@@ -1,0 +1,14 @@
+name: "CAST_UNISWAP_VOTE"
+
+variables:
+  proposalId: uint256
+  support: bool
+
+definitions:
+ - Contract UNISWAP_ROUTER 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
+
+actions:
+ - UNISWAP_ROUTER castVote proposalId support
+
+
+description: "Voted for proposal!"
