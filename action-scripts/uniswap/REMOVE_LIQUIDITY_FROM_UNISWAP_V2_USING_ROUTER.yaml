@@ -1,0 +1,36 @@
+name: "REMOVE_LIQUIDITY_FROM_UNISWAP_V2_USING_ROUTER"
+
+variables:
+  tokenAAddress: address
+  tokenBAddress: address
+  liquidityAmount: uint256
+  amountAMin: uint256
+  amountBMin: uint256
+
+definitions:
+ - Token TOKEN_A tokenAAddress
+ - Token TOKEN_B tokenBAddress
+ - Token LIQUIDITY_TOKEN liquidityTokenAddress
+ - Contract UNISWAP_ROUTER 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
+ - Function removeLiquidity UNISWAP_ROUTER addLiquidity(address, address, uint256, uint256, uint256, uint256, address, uint256) => (uint256, uint256, uint256)
+
+inputs:
+  - TOKEN_A: amountADesired
+  - TOKEN_B: amountBDesired
+  - TOKEN_A: amountAMin
+  - TOKEN_B: amountBMin
+
+actions:
+ - LIQUIDITY_TOKEN approve UNISWAP_ROUTER liquidityAmount
+ - UNISWAP_ROUTER removeLiquidity tokenAAddress tokenBAddress liquidityAmount amountAMin amountBMin wallet deadline => receivedAmountA receivedAmountB
+
+results:
+  receivedAmountA: uint256
+  receivedAmountB: uint256
+
+outputs:
+ - TOKEN_A: receivedAmountA
+ - TOKEN_B: receivedAmountB
+ - LIQUIDITY_TOKEN: liquidityAmount
+
+description: "Received ${receivedAmountA:TOKEN_A.decimals} ${TOKEN_A.symbol} and ${receivedAmountB:TOKEN_B.decimals} ${TOKEN_B.symbol} by removing ${liquidityAmount:LIQUIDITY_TOKEN.decimals} ${LIQUIDITY_TOKEN.symbol} of liquidity."
