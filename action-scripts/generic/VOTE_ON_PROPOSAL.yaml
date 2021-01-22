@@ -1,0 +1,26 @@
+name: "VOTE_ON_PROPOSAL"
+
+variables:
+  protocol: address
+  proposal: uint256
+  support: bool
+
+results:
+  votingWeight: uint256
+
+definitions:
+ - Token Protocol protocol
+ - Function vote Protocol castVote(uint256,bool)
+ - Function getReceipt Protocol getReceipt(uint256,address) => uint256
+
+inputs: # none
+
+actions:
+ - Protocol vote proposal support 
+ - Protocol getReceipt proposal wallet => votingWeight # note — actually a struct
+
+outputs: # none
+
+operations:
+
+description: "Cast ${votingWeight} ${support ? 'FOR' : 'AGAINST'} votes on ${Protocol:name} proposal ${proposal}"
