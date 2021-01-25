@@ -21,4 +21,7 @@ operations:
 
 outputs:
 
+associations:
+ - GOVERNANCE: delegatedTokens
+
 description: "Delegate ${delegatedTokens:GOVERNANCE.decimals} ${GOVERNANCE.symbol} to ${delegateAddress}"
