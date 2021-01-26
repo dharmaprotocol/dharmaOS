@@ -7,10 +7,16 @@ variables:
   amountBDesired: uint256
   amountAMin: uint256
   amountBMin: uint256
+  liquidityTokenAddress: address
+
+inputs:
+  - TOKEN_A: amountADesired
+  - TOKEN_B: amountBDesired
 
 definitions:
  - Token TOKEN_A tokenAAddress
  - Token TOKEN_B tokenBAddress
+ - Token LIQUIDITY_TOKEN liquidityTokenAddress
  - Contract UNISWAP_ROUTER 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
  - Function addLiquidity UNISWAP_ROUTER addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256) => uint256 uint256 uint256
 
@@ -26,9 +32,11 @@ results:
 
 outputs:
  - LIQUIDITY_TOKEN: receivedLiquidityAmount
- - TOKEN_A: suppliedAmountA
- - TOKEN_B: suppliedAmountB
 
-operations:
+associations:
+  - TOKEN_A: amountAMin
+  - TOKEN_B: amountBMin
+  - TOKEN_A: suppliedAmountA
+  - TOKEN_B: suppliedAmountB
 
 description: "Mint ${receivedLiquidityAmount:18.decimals} Uniswap V2 ${TOKEN_A.symbol}-${TOKEN_B.symbol} LP tokens by supplying ${suppliedAmountA:TOKEN_A.decimals} ${TOKEN_A.symbol} and ${suppliedAmountB:TOKEN_B.decimals} ${TOKEN_B.symbol}."
