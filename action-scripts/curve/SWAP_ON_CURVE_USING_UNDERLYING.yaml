@@ -1,0 +1,39 @@
+name: "SWAP_ON_CURVE_USING_UNDERLYING"
+
+variables:
+  curvePoolAddress: address
+  soldTokenAddress: address
+  boughtTokenAddress: address
+  soldTokenAmount: uint256
+  minimumBoughtTokenAmount: uint256
+  soldTokenIndex: int128
+  boughtTokenIndex: int128
+
+results:
+  boughtTokenAmount: uint256
+
+definitions:
+ - Token SOLD_UNDERLYING soldTokenAddress
+ - Token BOUGHT_UNDERLYING boughtTokenAddress
+ - Token CURVE curvePoolAddress
+ - Function swap CURVE exchange_underlying(int128,int128,uint256,uint256)
+
+inputs:
+ - SOLD_UNDERLYING: soldTokenAmount
+
+actions:
+ - BOUGHT_UNDERLYING balanceOf wallet => initialBoughtTokenAmount
+ - SOLD_UNDERLYING approve curvePoolAddress soldTokenAmount
+ - CURVE swap soldTokenIndex boughtTokenIndex soldTokenAmount minimumBoughtTokenAmount
+ - BOUGHT_UNDERLYING balanceOf wallet => finalBoughtTokenAmount
+
+operations:
+ - finalBoughtTokenAmount - initialBoughtTokenAmount => boughtTokenAmount
+
+outputs:
+ - BOUGHT_UNDERLYING: boughtTokenAmount
+
+associations:
+- BOUGHT_UNDERLYING: minimumBoughtTokenAmount
+
+description: "Swap ${soldTokenAmount:SOLD_UNDERLYING.decimals} ${SOLD_UNDERLYING.symbol} for ${boughtTokenAmount:BOUGHT_UNDERLYING.decimals} ${BOUGHT_UNDERLYING.symbol} on Curve ${CURVE.symbol} pool"
