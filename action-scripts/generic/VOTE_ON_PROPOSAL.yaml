@@ -9,7 +9,7 @@ results:
   votingWeight: uint256
 
 definitions:
- - Token Protocol protocol
+ - Contract Protocol protocol
  - Function vote Protocol castVote(uint256,bool)
  - Function getReceipt Protocol getReceipt(uint256,address) => uint256
 
@@ -23,4 +23,4 @@ outputs: # none
 
 operations:
 
-description: "Cast ${votingWeight} ${support ? 'FOR' : 'AGAINST'} votes on ${Protocol:name} proposal ${proposal}"
+description: "Cast ${votingWeight} ${support ? 'FOR' : 'AGAINST'} votes on proposal ${proposal}"
