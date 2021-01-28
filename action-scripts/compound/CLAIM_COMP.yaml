@@ -1,0 +1,28 @@
+name: "CLAIM_COMP"
+
+variables:
+
+results:
+  claimedComp: uint256
+
+definitions:
+ - Token COMP 0xc00e94Cb662C3520282E6f5717214004A7f26888
+ - Contract COMPTROLLER 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B
+ - Function claimComp COMPTROLLER claimComp(address)
+
+inputs:
+
+actions:
+ - COMP balanceOf wallet => initialCOMPBalance
+ - COMPTROLLER claimComp wallet
+ - COMP balanceOf wallet => finalCOMPBalance
+
+operations:
+ - finalCOMPBalance - initialCOMPBalance => claimedComp
+
+outputs:
+ - COMP: claimedComp
+ 
+associations:
+
+description: "Claimed ${claimedComp:COMP.decimals} COMP"
