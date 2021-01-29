@@ -26,4 +26,4 @@ outputs:
  
 associations:
 
-description: "Mint ${cETHReceivedAmount:cETH.decimals} cETH using ${suppliedAmount:ETHER.decimals} ETH"
+description: "Mint ${cETHReceivedAmount:cETH.decimals} cETH using ${suppliedETHAmount:ETHER.decimals} ETH"
