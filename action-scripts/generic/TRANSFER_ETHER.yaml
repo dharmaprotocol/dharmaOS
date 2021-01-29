@@ -1,0 +1,25 @@
+name: "TRANSFER_ETHER"
+
+variables:
+  to: address
+  amount: uint256
+
+results:
+
+definitions:
+ - Contract RECIPIENT to
+ - Function pay fallback:payable
+
+inputs:
+ - ETHER: amount
+
+actions:
+ - RECIPIENT pay:amount
+
+operations:
+
+outputs:
+
+associations:
+
+description: "Transfer ${amount:ETHER.decimals} ETH to ${to}"
