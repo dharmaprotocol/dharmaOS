@@ -8,7 +8,7 @@ results:
 
 definitions:
  - Contract RECIPIENT to
- - Function pay fallback:payable
+ - Function pay RECIPIENT fallback:payable
 
 inputs:
  - ETHER: amount
