@@ -7,14 +7,12 @@ variables:
 results:
 
 definitions:
- - Contract RECIPIENT to
- - Function pay RECIPIENT fallback:payable
 
 inputs:
  - ETHER: amount
 
 actions:
- - RECIPIENT pay:amount
+ - ETHER to:amount
 
 operations:
 
