@@ -22,7 +22,7 @@ operations:
  - cETHFinalAmount - cETHInitialAmount => cETHReceivedAmount
 
 outputs:
- - cETH: cTokenReceivedAmount
+ - cETH: cETHReceivedAmount
  
 associations:
 
