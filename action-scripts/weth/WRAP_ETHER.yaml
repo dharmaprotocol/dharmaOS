@@ -1,0 +1,25 @@
+name: "WRAP_ETHER"
+
+variables:
+  amount: uint256
+
+results:
+
+definitions:
+ - Token WETH 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+ - Function wrap WETH deposit():payable
+
+inputs:
+ - ETHER: amount
+
+actions:
+ - WETH deposit:amount
+
+operations:
+
+outputs:
+ - WETH: amount
+
+associations:
+
+description: "Wrap ${amount:ETHER.decimals} ETH"
