@@ -13,7 +13,7 @@ inputs:
  - ETHER: amount
 
 actions:
- - WETH deposit:amount
+ - WETH wrap:amount
 
 operations:
 
