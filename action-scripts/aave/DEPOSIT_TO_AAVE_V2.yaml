@@ -13,7 +13,7 @@ definitions:
  - Contract aave 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9
  - Token UNDERLYING suppliedTokenAddress
  - Token aTOKEN aTokenAddress
- - Function depositToAave aave deposit(address,uint256,address,uint16) => uint256
+ - Function depositToAave aave deposit(address,uint256,address,uint16)
 
 inputs:
  - UNDERLYING: suppliedAmount
