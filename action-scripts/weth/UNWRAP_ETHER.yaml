@@ -7,13 +7,15 @@ results:
 
 definitions:
  - Token WETH 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
- - Function unwrap WETH withdraw(uint256)
+ - Contract WETH_UNWRAPPER 0xc193Bb0a80e2e71CC9E1276F5Eecb44b22AeEF75
+ - Function unwrap WETH_UNWRAPPER unwrapWETHFor(address,uint256)
 
 inputs:
  - WETH: amount
 
 actions:
- - WETH unwrap amount
+ - WETH approve WETH_UNWRAPPER amount
+ - WETH_UNWRAPPER unwrap wallet amount
 
 operations:
 
