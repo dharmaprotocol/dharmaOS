@@ -1,0 +1,33 @@
+name: "DEPOSIT_TO_AAVE_V2"
+
+variables:
+  suppliedTokenAddress: address
+  suppliedAmount: uint256
+  aTokenAddress: address
+  referralCode: uint16
+
+results:
+  aTokenReceivedAmount: uint256
+
+definitions:
+ - Contract aave 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9
+ - Token UNDERLYING suppliedTokenAddress
+ - Token aTOKEN aTokenAddress
+ - Function depositToAave aave deposit(address,uint256,address,uint16)
+
+inputs:
+ - UNDERLYING: suppliedAmount
+
+actions:
+ - aTOKEN balanceOf wallet => aTokenInitialAmount
+ - UNDERLYING approve aave suppliedAmount
+ - aave depositToAave UNDERLYING suppliedAmount wallet referralCode
+ - aTOKEN balanceOf wallet => aTokenFinalAmount
+
+operations:
+ - aTokenFinalAmount - aTokenInitialAmount => aTokenReceivedAmount
+
+outputs:
+ - aTOKEN: aTokenReceivedAmount
+
+description: "Mint ${aTokenReceivedAmount:aTOKEN.decimals} ${aTOKEN.symbol} using ${suppliedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol}"
