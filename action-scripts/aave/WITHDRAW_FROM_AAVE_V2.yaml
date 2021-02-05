@@ -18,6 +18,7 @@ inputs:
  - aTOKEN: aTokenAmount
 
 actions:
+ - aTOKEN approve aave aTokenAmount
  - aave withdrawFromAave aTokenAddress aTokenAmount wallet => receivedAmount
 
 outputs:
