@@ -1,0 +1,26 @@
+name: "WITHDRAW_FROM_AAVE_V2"
+
+variables:
+  aTokenAddress: address
+  aTokenAmount: uint256
+  receivedTokenAddress: address
+
+results:
+  receivedAmount: uint256
+
+definitions:
+ - Contract aave 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9
+ - Token aTOKEN aTokenAddress
+ - Token TOKEN receivedTokenAddress
+ - Function withdrawFromAave aave withdraw(address,uint256,address) => uint256
+
+inputs:
+ - aTOKEN: aTokenAmount
+
+actions:
+ - aave withdrawFromAave aTokenAddress aTokenAmount wallet => receivedAmount
+
+outputs:
+ - TOKEN: receivedAmount
+
+description: "Withdraw ${receivedAmount:TOKEN.decimals} ${TOKEN.symbol} using ${aTokenAmount:aTOKEN.decimals} ${aTOKEN.symbol}"
