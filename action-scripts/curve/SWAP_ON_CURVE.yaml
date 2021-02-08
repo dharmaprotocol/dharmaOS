@@ -1,5 +1,7 @@
 name: "SWAP_ON_CURVE"
 
+summary: "Swap tokens across a variety of Curve pools"
+
 variables:
   curvePoolAddress: address
   soldTokenAddress: address

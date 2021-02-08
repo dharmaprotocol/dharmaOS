@@ -1,5 +1,7 @@
 name: "DELEGATE_VOTING"
 
+summary: "Delegate voting power in supported governance tokens to another account"
+
 variables:
   governanceTokenAddress: address
   delegateAddress: address

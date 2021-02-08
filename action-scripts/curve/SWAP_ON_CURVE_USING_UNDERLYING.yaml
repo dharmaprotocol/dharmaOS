@@ -1,5 +1,7 @@
 name: "SWAP_ON_CURVE_USING_UNDERLYING"
 
+summary: "Swap tokens using underlying assets across a variety of Curve pools"
+
 variables:
   curvePoolAddress: address
   soldTokenAddress: address

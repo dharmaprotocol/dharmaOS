@@ -1,5 +1,7 @@
 name: "ENTER_COMPOUND_MARKET"
 
+summary: "Enter a market on Compound to enable usage of the market's cToken as collateral for borrowing"
+
 variables:
   cTokenAddress: address
 

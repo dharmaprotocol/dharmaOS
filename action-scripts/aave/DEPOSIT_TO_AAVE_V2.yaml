@@ -1,5 +1,7 @@
 name: "DEPOSIT_TO_AAVE_V2"
 
+summary: "Mint aTokens using Aave v2"
+
 variables:
   suppliedTokenAddress: address
   suppliedAmount: uint256

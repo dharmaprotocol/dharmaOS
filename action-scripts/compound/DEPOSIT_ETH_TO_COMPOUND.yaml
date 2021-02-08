@@ -1,5 +1,7 @@
 name: "DEPOSIT_ETH_TO_COMPOUND"
 
+summary: "Mint cETH from Compound using Ether"
+
 variables:
   suppliedETHAmount: uint256
 
@@ -23,7 +25,7 @@ operations:
 
 outputs:
  - cETH: cETHReceivedAmount
- 
+
 associations:
 
 description: "Mint ${cETHReceivedAmount:cETH.decimals} cETH using ${suppliedETHAmount:ETHER.decimals} ETH"

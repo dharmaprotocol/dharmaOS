@@ -1,5 +1,7 @@
 name: "WITHDRAW_ETH_FROM_COMPOUND"
 
+summary: "Redeem cETH from Compound and receive Ether"
+
 variables:
   cETHAmount: uint256
 

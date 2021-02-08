@@ -1,5 +1,7 @@
 name: "DEPOSIT_TO_COMPOUND"
 
+summary: "Mint cTokens from Compound using supported tokens"
+
 variables:
   suppliedTokenAddress: address
   suppliedAmount: uint256

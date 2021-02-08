@@ -1,5 +1,7 @@
 name: "ADD_LIQUIDITY_TO_UNISWAP_V2_USING_ROUTER"
 
+summary: "Add liquidity to Uniswap pairs, supplying both tokens that make up the pair and minting LP tokens"
+
 variables:
   tokenAAddress: address
   tokenBAddress: address

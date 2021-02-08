@@ -1,5 +1,7 @@
 name: "WITHDRAW_FROM_AAVE_V2"
 
+summary: "Redeem aTokens from Aave v2 and receive underlying tokens"
+
 variables:
   aTokenAddress: address
   aTokenAmount: uint256

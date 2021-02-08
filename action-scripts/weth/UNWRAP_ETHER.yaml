@@ -1,5 +1,7 @@
 name: "UNWRAP_ETHER"
 
+summary: "Unwrap Wrapped Ether, receiving Ether"
+
 variables:
   amount: uint256
 

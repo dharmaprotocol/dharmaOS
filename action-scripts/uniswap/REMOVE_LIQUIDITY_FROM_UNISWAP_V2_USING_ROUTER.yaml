@@ -1,5 +1,7 @@
 name: "REMOVE_LIQUIDITY_FROM_UNISWAP_V2_USING_ROUTER"
 
+summary: "Remove liquidity from Uniswap pairs, burning LP tokens and receiving both tokens that make up the pair"
+
 variables:
   tokenAAddress: address
   tokenBAddress: address

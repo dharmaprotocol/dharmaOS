@@ -1,5 +1,7 @@
 name: "WITHDRAW_FROM_YVAULT_V1"
 
+summary: "Redeem yTokens using yearn V1, receiving underlying tokens"
+
 variables:
   receivedTokenAddress: address
   yVaultAddress: address

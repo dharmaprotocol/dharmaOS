@@ -1,5 +1,7 @@
 name: "WITHDRAW_FROM_COMPOUND"
 
+summary: "Redeem cTokens from Compound and receive underlying tokens"
+
 variables:
   receivedTokenAddress: address
   cTokenAddress: address

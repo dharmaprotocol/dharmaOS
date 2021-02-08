@@ -1,5 +1,7 @@
 name: "TRANSFER_ERC20"
 
+summary: "Transfer tokens"
+
 variables:
   token: address
   to: address

@@ -1,5 +1,7 @@
 name: "MINT_TO_YVAULT_V1"
 
+summary: "Mint yTokens using yearn V1 (warning: yearn v1 has been exploited recently!)"
+
 variables:
   suppliedTokenAddress: address
   suppliedAmount: uint256

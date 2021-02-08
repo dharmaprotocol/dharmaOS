@@ -1,5 +1,7 @@
 name: "REPAY_BORROW_IN_FULL_FROM_COMPOUND"
 
+summary: "Repay a given token balance borrowed from Compound in full"
+
 variables:
   repayedTokenAddress: address
   cTokenAddress: address

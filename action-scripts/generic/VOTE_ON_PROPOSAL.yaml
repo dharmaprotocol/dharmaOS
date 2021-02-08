@@ -1,5 +1,7 @@
 name: "VOTE_ON_PROPOSAL"
 
+summary: "Vote on active governance proposals for supported protocols"
+
 variables:
   protocol: address
   proposal: uint256
@@ -16,7 +18,7 @@ definitions:
 inputs: # none
 
 actions:
- - Protocol vote proposal support 
+ - Protocol vote proposal support
  - Protocol getReceipt proposal wallet => votingWeight # note — actually a struct
 
 outputs: # none

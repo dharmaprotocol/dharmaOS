@@ -1,5 +1,7 @@
 name: "TRANSFER_ETHER"
 
+summary: "Transfer Ether"
+
 variables:
   to: address
   amount: uint256

@@ -1,5 +1,7 @@
 name: "CLAIM_COMP"
 
+summary: "Claim accrued COMP from all Compound markets"
+
 variables:
 
 results:
@@ -22,7 +24,7 @@ operations:
 
 outputs:
  - COMP: claimedComp
- 
+
 associations:
 
-description: "Claimed ${claimedComp:COMP.decimals} COMP"
+description: "Claim ${claimedComp:COMP.decimals} COMP"
