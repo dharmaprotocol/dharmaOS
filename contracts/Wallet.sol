@@ -58,6 +58,8 @@ interface WalletInterface {
     bytes callData;
   }
 
+  receive() external payable;
+
   function execute(
     Call[] calldata calls
   ) external returns (bool[] memory ok, bytes[] memory returnData);
@@ -105,6 +107,8 @@ contract Wallet is WalletInterface {
   constructor(address _controller) {
     controller = _controller;
   }
+
+  receive() external payable override {}
 
   function execute(
     Call[] calldata calls

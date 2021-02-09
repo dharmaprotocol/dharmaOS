@@ -12,6 +12,19 @@ class Validator {
 		return validator.actionScripts;
 	}
 
+	static async getActionScript(name) {
+		const validator = new Validator();
+		await validator.parseActionScripts();
+		const actionScriptOptions = validator.actionScripts.filter(script => script.name === name);
+		if (actionScriptOptions.length === 0) {
+			throw new Error(
+				`Could not locate action script with name "${name}"`
+			);
+		}
+		const actionScript = actionScriptOptions[0];
+		return actionScript;
+	}
+
 	static TYPE_CHECKERS = {
 		string: (x => (x && (typeof x === 'string' || x instanceof String))),
 		array: (x => (x && Array.isArray(x) && typeof x === 'object')),
