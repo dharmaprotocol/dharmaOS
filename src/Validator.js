@@ -28,6 +28,11 @@ class Validator {
 		'int128',
 	]);
 
+	static INPUT_SELECTORS = new Set([
+		'0xa9059cbb', // transfer
+		'0x095ea7b3', // approve
+	]);
+
 	// TODO: validate outputs as well?
 	static ERC20_FUNCTIONS = {
 		'transfer': ['address', 'uint256'],
@@ -121,7 +126,13 @@ class Validator {
 
 	validateActionScripts() {
 		// TODO: execute in parallel while handling rejected promises
-		// TODO: ensure that no two action scripts have the same name
+
+		const names = this.actionScripts.map(script => script.name);
+		const namesSet = new Set(names);
+		if (namesSet.size !== names.length) {
+			throw new Error("All action scripts must have a unique name");
+		}
+
 		for (const script of this.actionScripts) {
 			this.validateActionScript(script);
 		}
@@ -187,7 +198,9 @@ class Validator {
 		Validator.validateVariablesAndResults(actionScript);
 		Validator.validateDefinitions(actionScript);
 		Validator.validateActions(actionScript);
-		// TODO: validate structure of inputs / outputs / associations
+		Validator.validateInputs(actionScript);
+		Validator.validateOutputs(actionScript);
+		Validator.validateAssociations(actionScript);
 		// TODO: validate operations / results
 		// TODO: validate description strings
 		// TODO: enforce that transfer and/or approve function selectors are
@@ -473,6 +486,203 @@ class Validator {
 						// TODO: validate argument is the expected type
 					}
 				}
+			}
+		}
+	}
+
+	static validateInputs(actionScript) {
+		const { name, variables, definitions, inputs, actions } = actionScript;
+
+		const inputFunctions = new Set(['transfer', 'approve']);
+		const payableFuntions = new Set([]);
+		for (let [i, definition] of Object.entries(definitions)) {
+			const splitDefinition = definition.split(' ');
+
+			if (splitDefinition[0] === "Function") {
+				const functionName = splitDefinition[1];
+				const attachedContract = splitDefinition[2];
+				const functionSignature = splitDefinition[3].split(":")[0]; // TODO: handle fallback
+				const functionSelector = `0x${sha3.keccak_256(functionSignature).slice(0, 8)}`;
+
+				if (Validator.INPUT_SELECTORS.has(functionSelector)) {
+					inputFunctions.add(functionName);
+				}
+
+				if (splitDefinition[3].includes(':payable')) {
+					payableFuntions.add(functionName);
+				}
+			}
+		}
+
+		const inputTokens = {};
+		for (let [i, inputObjects] of Object.entries(inputs)) {
+			if (!Validator.TYPE_CHECKERS.object(inputObjects)) {
+		    	throw new Error(
+		    		`Input #${parseInt(i) + 1} is not a key-value pair`
+		    	);
+			}
+			const inputList = Object.entries(inputObjects);
+			if (inputList.length !== 1) {
+		    	throw new Error(
+		    		`Input #${parseInt(i) + 1} is not a single key-value pair`
+		    	);
+			}
+			const [tokenName, inputValue] = inputList.pop();
+
+			if (tokenName in inputTokens) {
+				inputTokens[tokenName].push(inputValue);
+			} else {
+				inputTokens[tokenName] = [inputValue];
+			}
+
+			const tokenDefinitions = new Set(
+				definitions
+					.filter(definition => definition.startsWith('Token'))
+					.map(definition => definition.split(' ')[1])
+					.concat(['ETHER'])
+			);
+
+			if (!tokenDefinitions.has(tokenName)) {
+		    	throw new Error(
+		    		`Input #${parseInt(i) + 1} specifies an undefined token "${tokenName}"`
+		    	);
+			}
+
+			if (inputValue in variables) {
+				if (variables[inputValue] !== 'uint256') {
+					throw new Error(
+						`Action script "${name}" variable "${inputValue}" on input Token "${tokenName}" is not type "uint256"`
+					);
+				}
+			} else {
+				// TODO: validate argument is the expected type
+			}
+		}
+
+		for (let [i, action] of Object.entries(actions)) {
+			const splitAction = action.split(' ');
+			let actionContract = splitAction[0];
+			let actionFunction = splitAction[1];
+			let amountArgument;
+			if (actionContract === 'ETHER') {
+				if (!actionFunction.includes(':')) {
+					throw new Error(`Action script "${name}" does not specify both a recipient and an amount as part of an Ether transfer action (i.e. "ETHER recipient:amount")`);
+				}
+				amountArgument = actionFunction.split(':')[1];
+			} else if (actionFunction.includes(':')) {
+				[actionFunction, amountArgument] = actionFunction.split(':');
+				actionContract = 'ETHER';
+				if (!payableFuntions.has(actionFunction)) {
+					throw new Error(`Action script "${name}" does not properly define "${actionFunction}" as a payable function`);
+				}
+			} else if (inputFunctions.has(actionFunction)) {
+				amountArgument = splitAction[3];
+			} else {
+				continue; // Not an action requiring an input token declaration
+			}
+
+			if (!(actionContract in inputTokens)) {
+				throw new Error(`Action script "${name}" does not properly declare "${actionContract}" as an input token`);
+			}
+
+			const candidates = inputTokens[actionContract];
+			if (!candidates.includes(amountArgument)) { // TODO: handle <= raw amounts
+				throw new Error(`Action script "${name}" action "${actionContract} ${actionFunction}" contains a token transfer or approval input argument "${amountArgument}" that does not map back to a declared input`);
+			}
+
+			const indexToPop = candidates.indexOf(amountArgument);
+			inputTokens[actionContract] = candidates
+				.slice(0, indexToPop)
+				.concat(candidates.slice(indexToPop + 1));
+		}
+
+		// Note: staking, redeeming, or burning tokens may result in inputs that
+		// are difficult to detect statically (and will need to be validated via
+		// simulation and balance checks).
+		// const residualInputs = Object.values(inputTokens).flat();
+		// if (residualInputs.length !== 0) {
+		//     console.log(`Note: Action script "${name}" may not utilize "${residualInputs.join(', ')}"`);
+		// }
+	}
+
+	static validateOutputs(actionScript) {
+		const { name, variables, definitions, outputs, actions } = actionScript;
+		for (let [i, outputObjects] of Object.entries(outputs)) {
+			if (!Validator.TYPE_CHECKERS.object(outputObjects)) {
+		    	throw new Error(
+		    		`Output #${parseInt(i) + 1} is not a key-value pair`
+		    	);
+			}
+			const outputList = Object.entries(outputObjects);
+			if (outputList.length !== 1) {
+		    	throw new Error(
+		    		`Output #${parseInt(i) + 1} is not a single key-value pair`
+		    	);
+			}
+			const [tokenName, outputValue] = outputList.pop();
+
+			const tokenDefinitions = new Set(
+				definitions
+					.filter(definition => definition.startsWith('Token'))
+					.map(definition => definition.split(' ')[1])
+					.concat(['ETHER'])
+			);
+
+			if (!tokenDefinitions.has(tokenName)) {
+		    	throw new Error(
+		    		`Output #${parseInt(i) + 1} specifies an undefined token "${tokenName}"`
+		    	);
+			}
+
+			if (outputValue in variables) {
+				if (variables[outputValue] !== 'uint256') {
+					throw new Error(
+						`Action script "${name}" variable "${outputValue}" on output Token "${tokenName}" is not type "uint256"`
+					);
+				}
+			} else {
+				// TODO: validate argument is the expected type
+			}
+		}
+	}
+
+	static validateAssociations(actionScript) {
+		const { name, variables, definitions, associations, actions } = actionScript;
+		for (let [i, associationObjects] of Object.entries(associations)) {
+			if (!Validator.TYPE_CHECKERS.object(associationObjects)) {
+		    	throw new Error(
+		    		`Association #${parseInt(i) + 1} is not a key-value pair`
+		    	);
+			}
+			const associationList = Object.entries(associationObjects);
+			if (associationList.length !== 1) {
+		    	throw new Error(
+		    		`Association #${parseInt(i) + 1} is not a single key-value pair`
+		    	);
+			}
+			const [tokenName, associationValue] = associationList.pop();
+
+			const tokenDefinitions = new Set(
+				definitions
+					.filter(definition => definition.startsWith('Token'))
+					.map(definition => definition.split(' ')[1])
+					.concat(['ETHER'])
+			);
+
+			if (!tokenDefinitions.has(tokenName)) {
+		    	throw new Error(
+		    		`Association #${parseInt(i) + 1} specifies an undefined token "${tokenName}"`
+		    	);
+			}
+
+			if (associationValue in variables) {
+				if (variables[associationValue] !== 'uint256') {
+					throw new Error(
+						`Action script "${name}" variable "${associationValue}" on association Token "${tokenName}" is not type "uint256"`
+					);
+				}
+			} else {
+				// TODO: validate argument is the expected type
 			}
 		}
 	}
