@@ -125,8 +125,6 @@ class Validator {
 	}
 
 	validateActionScripts() {
-		// TODO: execute in parallel while handling rejected promises
-
 		const names = this.actionScripts.map(script => script.name);
 		const namesSet = new Set(names);
 		if (namesSet.size !== names.length) {
@@ -203,8 +201,6 @@ class Validator {
 		Validator.validateAssociations(actionScript);
 		// TODO: validate operations / results
 		// TODO: validate description strings
-		// TODO: enforce that transfer and/or approve function selectors are
-		// included as inputs with the correct amount!!
 	}
 
 	static validateVariablesAndResults(actionScript) {
@@ -311,10 +307,6 @@ class Validator {
 					);
 				}
 
-				// TODO: get function selector from function signature and use
-				// for validating input tokens (remember to take fallback() and
-				// :payable into account)
-
 				// TODO: get return value types and validate against assigned
 				// result types?
 			} else {
@@ -401,9 +393,7 @@ class Validator {
 				);
 			}
 
-			// TODO: validate payable actions against definitions to ensure they
-			// are indeed payable and that the payable argument has the correct
-			// type
+			// Note: payable checks are performed as part of input validation
 			if (actionFunction.includes(':')) {
 				actionFunction = actionFunction.split(':')[0];
 			}
