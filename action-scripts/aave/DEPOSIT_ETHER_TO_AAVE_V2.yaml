@@ -12,7 +12,7 @@ results:
 definitions:
  - Contract gateway 0xDcD33426BA191383f1c9B431A342498fdac73488
  - Token aETH 0x3a3A65aAb0dd2A17E3F1947bA16138cd37d08c04
- - Function depositToAave aave depositETH(address,uint16):payable
+ - Function depositToAave gateway depositETH(address,uint16):payable
 
 inputs:
  - ETHER: suppliedAmount
