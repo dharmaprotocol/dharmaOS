@@ -1,0 +1,31 @@
+name: "DEPOSIT_ETHER_TO_AAVE_V2"
+
+summary: "Mint aETH using Aave v2"
+
+variables:
+  suppliedAmount: uint256
+  referralCode: uint16
+
+results:
+  aTokenReceivedAmount: uint256
+
+definitions:
+ - Contract aave 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9
+ - Token aETH 0x3a3A65aAb0dd2A17E3F1947bA16138cd37d08c04
+ - Function depositToAave aave depositETH(address,uint16):payable
+
+inputs:
+ - ETHER: suppliedAmount
+
+actions:
+ - aETH balanceOf wallet => aTokenInitialAmount
+ - aave depositToAave:suppliedAmount wallet referralCode
+ - aETH balanceOf wallet => aTokenFinalAmount
+
+operations:
+ - aTokenFinalAmount - aTokenInitialAmount => aTokenReceivedAmount
+
+outputs:
+ - aETH: aTokenReceivedAmount
+
+description: "Mint ${aTokenReceivedAmount:aETH.decimals} ${aETH.symbol} using ${suppliedAmount:ETHER.decimals} ETH"
