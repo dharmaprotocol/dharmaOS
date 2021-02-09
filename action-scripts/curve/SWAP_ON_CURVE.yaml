@@ -36,6 +36,6 @@ outputs:
  - BOUGHT: boughtTokenAmount
 
 associations:
-- BOUGHT: minimumBoughtTokenAmount
+ - BOUGHT: minimumBoughtTokenAmount
 
 description: "Swap ${soldTokenAmount:SOLD.decimals} ${SOLD.symbol} for ${boughtTokenAmount:BOUGHT.decimals} ${BOUGHT.symbol} on Curve (pool: ${curvePoolAddress})"

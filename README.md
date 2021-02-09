@@ -1,6 +1,12 @@
 # action-scripts
 A collection of "Action Scripts" for execution via the Dharma Smart Wallet.
 
+## Usage
+```
+$ yarn install
+$ yarn build
+```
+
 ## Specification
 The Primary action script format is a human-readable YAML file — this is convertible to and from a machine-readable JSON file that will be what is stored in the database and used to compile payloads.
 

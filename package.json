@@ -1,0 +1,17 @@
+{
+  "name": "action-scripts",
+  "version": "0.1.0",
+  "description": "A collection of \"Action Scripts\" for execution via the Dharma Smart Wallet.",
+  "main": "index.js",
+  "repository": "https://github.com/dharmaprotocol/action-scripts",
+  "author": "@0age + @carlosflrs",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "node src/validate.js"
+  },
+  "dependencies": {
+    "js-sha3": "^0.8.0",
+    "yaml": "^1.10.0"
+  }
+}
