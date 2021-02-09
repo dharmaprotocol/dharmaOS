@@ -11,6 +11,8 @@
     "build": "node src/validate.js"
   },
   "dependencies": {
+    "dotenv": "^8.2.0",
+    "hardhat": "^2.0.9",
     "js-sha3": "^0.8.0",
     "yaml": "^1.10.0"
   }
