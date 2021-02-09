@@ -4,7 +4,9 @@
 .idea/
 node_modules/
 private/
+artifacts/
 build/
+cache/
 .env
 yarn-error.log
 yarn.lock
