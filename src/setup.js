@@ -2,6 +2,7 @@ const hre = require("hardhat");
 const ethers = hre.ethers;
 const { Validator } = require('./Validator');
 const { Encoder } = require("./Encoder");
+const { ResultsParser } = require("./results-parser");
 
 async function main() {
 	const signers = await ethers.getSigners();
@@ -93,24 +94,50 @@ async function main() {
 		}
 	}
 
-	const calls = await Encoder.encode("SWAP_ON_CURVE", VARIABLES, wallet.address);
+	const encoder = new Encoder("SWAP_ON_CURVE", VARIABLES, wallet.address);
+	await encoder.parseActionScriptDefinitions();
+	await encoder.constructCallsAndResultsFormat();
 
-	let simulation = await wallet.callStatic.simulate(calls);
+	const callResults = await wallet.callStatic.simulate(encoder.calls);
 
-	let execution = await wallet.execute(calls);
-	execution = await execution.wait();
-	const logs = execution.logs;
+	console.log({encoder});
 
-	const events = [];
-	for (let log of logs) {
-		let currentEvent = null;
-		try {
-			currentEvent = wallet.interface.parseLog(log);
-		} catch (error) {
-			console.error('ERROR');
-		}
-		events.push(currentEvent);
-	}
+	const parserArgs = {
+		actionScriptName: "SWAP_ON_CURVE",
+        calls: encoder.calls,
+        callResults,
+		callABIs: encoder.callABIs,
+		resultToParse: encoder.resultToParse,
+        contract: wallet,
+	};
+
+	const resultsParser = new ResultsParser(parserArgs);
+
+	const { success, results } = await resultsParser.parse();
+
+	console.log({
+		success,
+		results,
+	});
+
+	// const results = resultsParser.parse();
+
+	// let execution = await wallet.execute(calls);
+	// execution = await execution.wait();
+	// const logs = execution.logs;
+	//
+	// const events = [];
+	// for (let log of logs) {
+	// 	let currentEvent = null;
+	// 	try {
+	// 		currentEvent = wallet.interface.parseLog(log);
+	// 	} catch (error) {
+	// 		console.error('ERROR', error.message);
+	// 	}
+	// 	events.push(currentEvent);
+	// }
+	//
+	// console.log(JSON.stringify(events, null, 2));
 }
 
 main()
