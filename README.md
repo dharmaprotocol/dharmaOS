@@ -2,9 +2,17 @@
 A collection of "Action Scripts" for execution via the Dharma Smart Wallet.
 
 ## Usage
+1. set up `.env` file:
+```
+WEB3_PROVIDER_URL='<some archive node URL like Alchemy>'
+ETHERSCAN_API_KEY='<an Etherscan API key>'
+```
+
+2. install, compile contract and action scripts, and run all the tests
 ```
 $ yarn install
 $ yarn build
+$ yarn test
 ```
 
 ## Specification

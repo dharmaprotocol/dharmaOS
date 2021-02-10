@@ -1,6 +1,6 @@
 {
   "name": "action-scripts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A collection of \"Action Scripts\" for execution via the Dharma Smart Wallet.",
   "main": "index.js",
   "repository": "https://github.com/dharmaprotocol/action-scripts",
@@ -8,7 +8,8 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build": "node src/validate.js"
+    "build": "npx hardhat compile && node src/validate.js",
+    "test": "node src/test.js"
   },
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.1",
