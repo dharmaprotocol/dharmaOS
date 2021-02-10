@@ -415,10 +415,6 @@ async function main() {
 	console.log(JSON.stringify(events, null, 2));
 }
 
-
-https://api.etherscan.io/api?module=contract&action=getabi&address=0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413&apikey=YourApiKeyToken
-
-
 main()
 	.then(() => process.exit(0))
 	.catch(error => {
