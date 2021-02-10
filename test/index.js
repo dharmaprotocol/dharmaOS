@@ -72,62 +72,64 @@ describe("Action Scripts", function() {
             events: expectedEvents = [],
         } = scenario;
 
-        before(async function() {
-            const data = await evaluate(
-                actionScriptName,
-                variables,
-                blockNumber
-            );
-            success = data.success;
-            evaluatedResults = data.results;
-            evaluatedEvents  = data.events;
+        describe(`${actionScriptName}`, async function() {
+            before(async function() {
+                const data = await evaluate(
+                    actionScriptName,
+                    variables,
+                    blockNumber
+                );
+                success = data.success;
+                evaluatedResults = data.results;
+                evaluatedEvents  = data.events;
 
-        });
-
-        it(`${actionScriptName}: success`, async function() {
-            expect(success).to.equal(true);
-        });
-
-        for (const [resultName, resultValue] of Object.entries(expectedResults)) {
-
-            it(`${actionScriptName}: expect result ${resultName} to equal ${resultValue}`, async function() {
-                expect(evaluatedResults[resultName]).to.equal(resultValue);
-            });
-        }
-
-        it(`${actionScriptName}: expect events length to be ${expectedEvents.length}`, async function() {
-            expect(evaluatedEvents.length).to.equal(expectedEvents.length);
-        });
-
-        for (const [i, { address: expectedAddress, name: expectedName, args: expectedArgs }] of Object.entries(expectedEvents)) {
-
-            it(`${actionScriptName}: expect event address to be ${expectedAddress}`, async function() {
-                const {
-                    address: evaluatedAddress,
-                } = evaluatedEvents[i];
-
-                expect(evaluatedAddress).to.equal(expectedAddress);
             });
 
-            it(`${actionScriptName}: expect event name to be ${expectedName}`, async function() {
-                const {
-                    name: evaluatedName,
-                } = evaluatedEvents[i];
-
-                expect(evaluatedName).to.equal(expectedName);
+            it("success", async function() {
+                expect(success).to.equal(true);
             });
 
-            for (const [expectedArgName, expectedArgValue] of Object.entries(expectedArgs)) {
-                it(`${actionScriptName}: expect event arg ${expectedArgName} to be ${expectedArgValue}`, async function() {
+            for (const [resultName, resultValue] of Object.entries(expectedResults)) {
+
+                it(`expect result ${resultName} to equal ${resultValue}`, async function() {
+                    expect(evaluatedResults[resultName]).to.equal(resultValue);
+                });
+            }
+
+            it(`expect events length to be ${expectedEvents.length}`, async function() {
+                expect(evaluatedEvents.length).to.equal(expectedEvents.length);
+            });
+
+            for (const [i, { address: expectedAddress, name: expectedName, args: expectedArgs }] of Object.entries(expectedEvents)) {
+
+                it(`expect event address to be ${expectedAddress}`, async function() {
                     const {
-                        args: evaluatedArgs,
+                        address: evaluatedAddress,
                     } = evaluatedEvents[i];
 
-                    expect(evaluatedArgs[expectedArgName]).to.equal(expectedArgValue);
+                    expect(evaluatedAddress).to.equal(expectedAddress);
                 });
 
+                it(`expect event name to be ${expectedName}`, async function() {
+                    const {
+                        name: evaluatedName,
+                    } = evaluatedEvents[i];
+
+                    expect(evaluatedName).to.equal(expectedName);
+                });
+
+                for (const [expectedArgName, expectedArgValue] of Object.entries(expectedArgs)) {
+                    it(`expect event arg ${expectedArgName} to be ${expectedArgValue}`, async function() {
+                        const {
+                            args: evaluatedArgs,
+                        } = evaluatedEvents[i];
+
+                        expect(evaluatedArgs[expectedArgName]).to.equal(expectedArgValue);
+                    });
+
+                }
             }
-        }
+        });
     }
 });
 
