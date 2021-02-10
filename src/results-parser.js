@@ -1,5 +1,6 @@
 const hre = require("hardhat");
 const ethers = hre.ethers;
+const { Validator } = require("./Validator.js");
 
 class ResultsParser {
 
@@ -11,6 +12,7 @@ class ResultsParser {
             callABIs,
             resultToParse,
             contract,
+            variables,
         } = args;
 
         this.actionScriptName= actionScriptName;
@@ -19,7 +21,7 @@ class ResultsParser {
         this.callABIs = callABIs;
         this.resultToParse = resultToParse;
         this.contract = contract;
-
+        this.variables = variables;
     }
 
     async parse() {
@@ -53,80 +55,73 @@ class ResultsParser {
             }
 
             for (let [resultIndex, resultName] of Object.entries(callTarget)) {
-                parsedResults[resultName] =
-                    results[callIndex].orderedResults[resultIndex];
+                const rawParsedResult = results[callIndex].orderedResults[resultIndex];
+                const parsedResult = ethers.BigNumber.isBigNumber(rawParsedResult)
+                    ? rawParsedResult.toString()
+                    : rawParsedResult;
+                parsedResults[resultName] = parsedResult;
             }
         }
 
         this.script = await Validator.getActionScript(this.actionScriptName);
 
-
         // run operations
-        // const operations = this.script.operations || [];
-        //
-        // for (let operation of operations) {
-        //     const [input, output] = operation.split(" => ");
-        //
-        //     const context = {
-        //         ...this.variables,
-        //         ...results,
-        //     };
-        //
-        //     results[output] = this.evaluateOperation(input, context);
-        // }
+        const operations = this.script.operations || [];
+
+        for (let operation of operations) {
+            const [input, output] = operation.split(" => ");
+
+            const context = {
+                ...this.variables,
+                ...parsedResults,
+            };
+
+            parsedResults[output] = this.evaluateOperation(input, context);
+        }
+
+        const finalResults = {};
+        const expectedResults = this.script.results || {};
+        for (let expectedResult of Object.keys(expectedResults)) {
+            if (expectedResult in parsedResults) {
+                finalResults[expectedResult] = parsedResults[expectedResult];
+            }
+        }
 
         return {
             success,
-            results: parsedResults
+            results: finalResults
         };
     }
 
     parseInputParameters(functionABI, functionName, data) {
-        console.log("parseInputParameters");
-
-        console.log({functionABI, functionName, data});
-
         const contractInterface = new ethers.utils.Interface([functionABI]);
 
-        console.log({contractInterface});
-
-        console.log(contractInterface.getFunction(functionName));
-        console.log(contractInterface.getSighash(contractInterface.getFunction(functionName)));
         const sighash = contractInterface.getSighash(functionName);
 
         const decoded = contractInterface.decodeFunctionData(functionName, `${sighash}${data}`);
-
-        console.log({decoded});
 
         return [
             decoded,
             Object.fromEntries(
                 Object.entries(functionABI).map(([i, x]) => [
                     x.name ? x.name : x.type,
-                    decoded[i],
+                    ethers.BigNumber.isBigNumber(decoded[i]) ? decoded[i].toString() : decoded[i],
                 ])
             ),
         ];
     }
 
     parseOutputParameters(functionABI, functionName, data) {
-        console.log("parseOutputParameters");
-        console.log({functionABI, functionName, data});
-
         const contractInterface = new ethers.utils.Interface([functionABI]);
 
-        console.log({contractInterface});
-
         const decoded = contractInterface.decodeFunctionResult(functionName, data);
-
-        console.log({decoded});
 
         return [
             decoded,
             Object.fromEntries(
                 Object.entries(functionABI).map(([i, x]) => [
                     x.name ? x.name : x.type,
-                    decoded[i],
+                    ethers.BigNumber.isBigNumber(decoded[i]) ? decoded[i].toString() : decoded[i],
                 ])
             ),
         ];
@@ -150,6 +145,37 @@ class ResultsParser {
             : "(no revert reason)";
     }
 
+    evaluateOperation(code, context) {
+        const [a, operator, b] = code.split(" ");
+
+        try {
+            const safeA = ethers.BigNumber.from(a in context ? context[a] : a);
+            const safeB = ethers.BigNumber.from(b in context ? context[b] : b);
+
+            let result;
+
+            if (operator === "+") {
+                result = safeA.add(safeB);
+            } else if (operator === "-") {
+                result = safeA.sub(safeB);
+            } else if (operator === "/") {
+                result = safeA.div(safeB);
+            } else if (operator === "*") {
+                result = safeA.mul(safeB);
+            } else if (operator === "**") {
+                result = safeA.pow(safeB);
+            } else {
+                throw new Error("Unknown operator");
+            }
+
+            if (result.toString() === "NaN") {
+                return null;
+            }
+            return result.toString();
+        } catch (error) {
+            return null;
+        }
+    }
 
     async parseCall(rawResult, callABI = null) {
         const [call, ok, returnData] = rawResult;
@@ -210,8 +236,6 @@ class ResultsParser {
             orderedResults,
         };
     }
-
-
 }
 
 
