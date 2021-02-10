@@ -1,5 +1,6 @@
 const hre = require("hardhat");
 const ethers = hre.ethers;
+const axios = require("axios");
 const { Validator } = require('./Validator');
 const { Encoder } = require("./Encoder");
 const { ResultsParser } = require("./results-parser");
@@ -227,6 +228,55 @@ const ERC20_ABI = [
     },
 ];
 
+const getRandomArbitrary = (min, max) => (Math.random() * (max - min) + min);
+
+const longer = () => (
+  new Promise(
+    resolve => {setTimeout(() => {resolve()}, getRandomArbitrary(700, 5000))}
+  )
+);
+
+const get = async (url, params = {}, retries = 0) => {
+  try {
+    const response = await axios.get(url, params);
+    const data = response.data;
+    if (data.status === '0' && typeof data.result === 'string') {
+      throw new Error(`BAD REQUEST: ${data}`);
+    }
+    return data;
+  } catch (error) {
+    if (retries > 3) {
+      console.log('MAX RETRIES EXCEEDED')
+      console.error(error);
+      process.exit(1);
+    }
+    await longer();
+    return await get(url, params, retries + 1);
+  }
+}
+
+const getABI = async (account) => {
+  // TODO: first see if a file with account name is in `contractABIs` directory
+  const data = await get(
+    'https://api.etherscan.io/api',
+    {
+      params: {
+        module: 'contract',
+        action: 'getabi',
+        address: account,
+        apikey: process.env.ETHERSCAN_API_KEY,
+      }
+    }
+  );
+
+  if (data && data.status === '1' && data.message === 'OK' && data.result) {
+  	// TODO: write ABI to file with account name in `contractABIs` directory
+  	return data.result;
+  } else {
+  	throw new Error(`bad Etherscan response: ${data}`);
+  }
+}
+
 async function main() {
 	const signers = await ethers.getSigners();
 	const signer = signers[0];
@@ -350,7 +400,13 @@ async function main() {
 				const erc20Interface = new ethers.utils.Interface(ERC20_ABI);
 				currentEvent = erc20Interface.parseLog(log);
 			} catch (error) {
-				console.error('ERROR', error.message);
+				try {
+					const abi = await getABI(log.address);
+					const contractInterface = new ethers.utils.Interface(abi);
+					currentEvent = contractInterface.parseLog(log);
+				} catch (error) {
+					console.error('ERROR', error.message);
+				}
 			}
 		}
 		events.push(currentEvent);
