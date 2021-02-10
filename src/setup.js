@@ -2,6 +2,230 @@ const hre = require("hardhat");
 const ethers = hre.ethers;
 const { Validator } = require('./Validator');
 const { Encoder } = require("./Encoder");
+const { ResultsParser } = require("./results-parser");
+
+const ERC20_ABI = [
+    {
+        constant: true,
+        inputs: [],
+        name: "name",
+        outputs: [
+            {
+                name: "",
+                type: "string",
+            },
+        ],
+        payable: false,
+        stateMutability: "view",
+        type: "function",
+    },
+    {
+        constant: false,
+        inputs: [
+            {
+                name: "_spender",
+                type: "address",
+            },
+            {
+                name: "_value",
+                type: "uint256",
+            },
+        ],
+        name: "approve",
+        outputs: [
+            {
+                name: "",
+                type: "bool",
+            },
+        ],
+        payable: false,
+        stateMutability: "nonpayable",
+        type: "function",
+    },
+    {
+        constant: true,
+        inputs: [],
+        name: "totalSupply",
+        outputs: [
+            {
+                name: "",
+                type: "uint256",
+            },
+        ],
+        payable: false,
+        stateMutability: "view",
+        type: "function",
+    },
+    {
+        constant: false,
+        inputs: [
+            {
+                name: "_from",
+                type: "address",
+            },
+            {
+                name: "_to",
+                type: "address",
+            },
+            {
+                name: "_value",
+                type: "uint256",
+            },
+        ],
+        name: "transferFrom",
+        outputs: [
+            {
+                name: "",
+                type: "bool",
+            },
+        ],
+        payable: false,
+        stateMutability: "nonpayable",
+        type: "function",
+    },
+    {
+        constant: true,
+        inputs: [],
+        name: "decimals",
+        outputs: [
+            {
+                name: "",
+                type: "uint8",
+            },
+        ],
+        payable: false,
+        stateMutability: "view",
+        type: "function",
+    },
+    {
+        constant: true,
+        inputs: [
+            {
+                name: "_owner",
+                type: "address",
+            },
+        ],
+        name: "balanceOf",
+        outputs: [
+            {
+                name: "balance",
+                type: "uint256",
+            },
+        ],
+        payable: false,
+        stateMutability: "view",
+        type: "function",
+    },
+    {
+        constant: true,
+        inputs: [],
+        name: "symbol",
+        outputs: [
+            {
+                name: "",
+                type: "string",
+            },
+        ],
+        payable: false,
+        stateMutability: "view",
+        type: "function",
+    },
+    {
+        constant: false,
+        inputs: [
+            {
+                name: "_to",
+                type: "address",
+            },
+            {
+                name: "_value",
+                type: "uint256",
+            },
+        ],
+        name: "transfer",
+        outputs: [
+            {
+                name: "",
+                type: "bool",
+            },
+        ],
+        payable: false,
+        stateMutability: "nonpayable",
+        type: "function",
+    },
+    {
+        constant: true,
+        inputs: [
+            {
+                name: "_owner",
+                type: "address",
+            },
+            {
+                name: "_spender",
+                type: "address",
+            },
+        ],
+        name: "allowance",
+        outputs: [
+            {
+                name: "",
+                type: "uint256",
+            },
+        ],
+        payable: false,
+        stateMutability: "view",
+        type: "function",
+    },
+    {
+        payable: true,
+        stateMutability: "payable",
+        type: "fallback",
+    },
+    {
+        anonymous: false,
+        inputs: [
+            {
+                indexed: true,
+                name: "owner",
+                type: "address",
+            },
+            {
+                indexed: true,
+                name: "spender",
+                type: "address",
+            },
+            {
+                indexed: false,
+                name: "value",
+                type: "uint256",
+            },
+        ],
+        name: "Approval",
+        type: "event",
+    },
+    {
+        anonymous: false,
+        inputs: [
+            {
+                indexed: true,
+                name: "from",
+                type: "address",
+            },
+            {
+                indexed: true,
+                name: "to",
+                type: "address",
+            },
+            {
+                indexed: false,
+                name: "value",
+                type: "uint256",
+            },
+        ],
+        name: "Transfer",
+        type: "event",
+    },
+];
 
 async function main() {
 	const signers = await ethers.getSigners();
@@ -93,11 +317,26 @@ async function main() {
 		}
 	}
 
-	const calls = await Encoder.encode("SWAP_ON_CURVE", VARIABLES, wallet.address);
+	const encoder = new Encoder("SWAP_ON_CURVE", VARIABLES, wallet.address);
+	await encoder.parseActionScriptDefinitions();
+	await encoder.constructCallsAndResultsFormat();
 
-	let simulation = await wallet.callStatic.simulate(calls);
+	const callResults = await wallet.callStatic.simulate(encoder.calls);
 
-	let execution = await wallet.execute(calls);
+	const parserArgs = {
+		actionScriptName: "SWAP_ON_CURVE",
+        calls: encoder.calls,
+        callResults,
+		callABIs: encoder.callABIs,
+		resultToParse: encoder.resultToParse,
+        contract: wallet,
+	};
+
+	const resultsParser = new ResultsParser(parserArgs);
+
+	const { success, results } = await resultsParser.parse();
+
+	let execution = await wallet.execute(encoder.calls);
 	execution = await execution.wait();
 	const logs = execution.logs;
 
@@ -107,10 +346,17 @@ async function main() {
 		try {
 			currentEvent = wallet.interface.parseLog(log);
 		} catch (error) {
-			console.error('ERROR');
+			try {
+				const erc20Interface = new ethers.utils.Interface(ERC20_ABI);
+				currentEvent = erc20Interface.parseLog(log);
+			} catch (error) {
+				console.error('ERROR', error.message);
+			}
 		}
 		events.push(currentEvent);
 	}
+
+	console.log(JSON.stringify(events, null, 2));
 }
 
 main()
