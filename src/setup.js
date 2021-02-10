@@ -277,38 +277,38 @@ const getABI = async (account) => {
   }
 }
 
-async function main() {
+async function evaluate(actionScriptName, variables, blockNumber) {
+	await hre.network.provider.request({
+	  method: "hardhat_reset",
+	  params: [{
+	    forking: {
+	      jsonRpcUrl: process.env.WEB3_PROVIDER_URL,
+	      blockNumber,
+	    }
+	  }]
+	});
+
 	const signers = await ethers.getSigners();
 	const signer = signers[0];
 
 	const Wallet = await ethers.getContractFactory("Wallet");
 	const wallet = await Wallet.deploy(signer.address);
 
-	const actionScript = await Validator.getActionScript("SWAP_ON_CURVE");
+	const actionScript = await Validator.getActionScript(actionScriptName);
 	const { definitions, inputs } = actionScript;
-
-	const VARIABLES = {
-		soldTokenAmount: "1000000000000000000",
-		soldTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-		boughtTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-		curvePoolAddress: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
-		soldTokenIndex: 0,
-		boughtTokenIndex: 1,
-		minimumBoughtTokenAmount: "900000",
-	};
 
 	const tokenDefinitions = Object.fromEntries(
 		definitions
 			.map(d => d.split(' '))
 			.filter(d => d[0] === 'Token')
-			.map(d => [d[1], d[2] in VARIABLES ? VARIABLES[d[2]] : d[2]])
+			.map(d => [d[1], d[2] in variables ? variables[d[2]] : d[2]])
 	);
 
 	const inputTokens = {};
 	for (let inputObjects of inputs) {
 		const [tokenName, inputVariable] = Object.entries(inputObjects).pop();
-		const inputValue = inputVariable in VARIABLES
-			? VARIABLES[inputVariable]
+		const inputValue = inputVariable in variables
+			? variables[inputVariable]
 			: inputVariable;
 
 		if (tokenName in inputTokens) {
@@ -367,14 +367,14 @@ async function main() {
 		}
 	}
 
-	const encoder = new Encoder("SWAP_ON_CURVE", VARIABLES, wallet.address);
+	const encoder = new Encoder(actionScriptName, variables, wallet.address);
 	await encoder.parseActionScriptDefinitions();
 	await encoder.constructCallsAndResultsFormat();
 
 	const callResults = await wallet.callStatic.simulate(encoder.calls);
 
 	const parserArgs = {
-		actionScriptName: "SWAP_ON_CURVE",
+		actionScriptName,
         calls: encoder.calls,
         callResults,
 		callABIs: encoder.callABIs,
@@ -386,36 +386,189 @@ async function main() {
 
 	const { success, results } = await resultsParser.parse();
 
-	let execution = await wallet.execute(encoder.calls);
-	execution = await execution.wait();
-	const logs = execution.logs;
+    let events = {};
+    if (!!success) {
+        let execution = await wallet.execute(encoder.calls);
+        execution = await execution.wait();
+        const logs = execution.logs;
 
-	const events = [];
-	for (let log of logs) {
-		let currentEvent = null;
-		try {
-			currentEvent = wallet.interface.parseLog(log);
-		} catch (error) {
-			try {
-				const erc20Interface = new ethers.utils.Interface(ERC20_ABI);
-				currentEvent = erc20Interface.parseLog(log);
-			} catch (error) {
-				try {
-					const abi = await getABI(log.address);
-					const contractInterface = new ethers.utils.Interface(abi);
-					currentEvent = contractInterface.parseLog(log);
-				} catch (error) {
-					console.error('ERROR', error.message);
-				}
-			}
-		}
-		events.push(currentEvent);
-	}
+        const rawEvents = [];
+        for (let log of logs) {
+            let currentEvent = null;
+            try {
+                currentEvent = wallet.interface.parseLog(log);
+            } catch (error) {
+                try {
+                    const erc20Interface = new ethers.utils.Interface(ERC20_ABI);
+                    currentEvent = erc20Interface.parseLog(log);
+                } catch (error) {
+                    try {
+                        const abi = await getABI(log.address);
+                        const contractInterface = new ethers.utils.Interface(abi);
+                        currentEvent = contractInterface.parseLog(log);
+                    } catch (error) {
+                        console.error('ERROR', error.message);
+                    }
+                }
+            }
+            const allArgs = Object.entries({...currentEvent.args});
+            const namedArgs = Object.fromEntries(
+                allArgs
+                    .slice(allArgs.length / 2)
+                    .map(([key, value]) => [key, ethers.BigNumber.isBigNumber(value) ? value.toString() : value])
+            );
 
-	console.log(JSON.stringify(events, null, 2));
+            const event = {
+                address: log.address,
+                name: currentEvent.name,
+                args: namedArgs,
+            }
+
+            rawEvents.push(event);
+        }
+
+        const hasFailures = rawEvents.some(
+            event => event.address === wallet.address && event.name === 'CallFailure'
+        );
+
+        if (hasFailures) {
+            throw new Error("FAILING!");
+        }
+
+        events = rawEvents.filter(
+            event => event.address !== wallet.address
+        );
+    }
+
+    return {
+        success,
+        results,
+        events,
+    }
 }
 
-main()
+async function runTest(test) {
+    const {
+        actionScriptName,
+        variables,
+        blockNumber,
+        results: expectedResults = {},
+        events: expectedEvents = [],
+    } = test;
+
+    const {
+        success,
+        results: evaluatedResults,
+        events: evaluatedEvents
+    } = await evaluate(
+        actionScriptName,
+        variables,
+        blockNumber
+    );
+
+    let fail = false;
+    if (!success) {
+        console.error("FAIL!")
+        fail = true;
+    }
+
+    for (const [resultName, resultValue] of Object.entries(expectedResults)) {
+        if (evaluatedResults[resultName] !== resultValue) {
+            console.error(`evaluated result ${evaluatedResults[resultName]} not equal to expected ${resultValue}`);
+            fail = true;
+        }
+    }
+
+    if (evaluatedEvents.length !== expectedEvents.length) {
+        console.error(`evaluated ${evaluatedEvents.length} events, expected ${expectedEvents.length}`);
+        fail = true;
+    }
+
+    for (const [i, { address: expectedAddress, name: expectedName, args: expectedArgs }] of Object.entries(expectedEvents)) {
+        const {
+            address: evaluatedAddress,
+            name: evaluatedName,
+            args: evaluatedArgs,
+        } = evaluatedEvents[i]
+        if (evaluatedAddress !== expectedAddress) {
+            console.error(`evaluated event address ${evaluatedAddress} not equal to expected ${expectedAddress}`);
+            fail = true;
+        }
+        if (evaluatedName !== expectedName) {
+            console.error(`evaluated event name ${evaluatedName} not equal to expected ${expectedName}`);
+            fail = true;
+        }
+        for (const [expectedArgName, expectedArgValue] of Object.entries(expectedArgs)) {
+            if (evaluatedArgs[expectedArgName] !== expectedArgValue) {
+                console.error(`evaluated arg ${evaluatedArgs[expectedArgName]} not equal to expected ${expectedArgValue}`);
+                fail = true;
+            }
+        }
+    }
+
+    if (!fail) {
+        console.log(`${actionScriptName} — Test passed!`);
+    } else {
+        console.error(`${actionScriptName} — Test failed!!!`);
+        console.log(evaluatedResults);
+        console.log(evaluatedEvents);
+    }
+}
+
+runTest({
+	actionScriptName: "SWAP_ON_CURVE",
+	variables: {
+		soldTokenAmount: "1000000000000000000",
+		soldTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+		boughtTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+		curvePoolAddress: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
+		soldTokenIndex: 0,
+		boughtTokenIndex: 1,
+		minimumBoughtTokenAmount: "900000",
+	},
+	blockNumber: 11095000,
+    results: { boughtTokenAmount: '1007566' },
+    events: [
+      {
+        address: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+        name: 'Approval',
+        args: {
+          owner: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+          spender: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
+          value: '1000000000000000000'
+        }
+      },
+      {
+        address: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+        name: 'Transfer',
+        args: {
+          from: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+          to: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
+          value: '1000000000000000000'
+        }
+      },
+      {
+        address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        name: 'Transfer',
+        args: {
+          from: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
+          to: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+          value: '1007566'
+        }
+      },
+      {
+        address: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
+        name: 'TokenExchange',
+        args: {
+          buyer: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+          sold_id: '0',
+          tokens_sold: '1000000000000000000',
+          bought_id: '1',
+          tokens_bought: '1007566'
+        }
+      }
+    ]
+})
 	.then(() => process.exit(0))
 	.catch(error => {
 		console.error(error);
