@@ -157,6 +157,7 @@ class Validator {
 
 		for (const script of this.actionScripts) {
 			const { name } = script;
+			delete script.variables.wallet;
 			const scriptJSON = JSON.stringify(script, null, 2);
 			fs.writeFile(
 				path.resolve(buildDir, `${name}.json`),
