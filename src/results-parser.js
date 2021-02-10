@@ -81,16 +81,20 @@ class ResultsParser {
         };
     }
 
-    parseInputParameters(functionABI, selector, data) {
+    parseInputParameters(functionABI, functionName, data) {
         console.log("parseInputParameters");
 
-        console.log({functionABI, selector, data});
+        console.log({functionABI, functionName, data});
 
         const contractInterface = new ethers.utils.Interface([functionABI]);
 
         console.log({contractInterface});
 
-        const decoded = contractInterface.decodeFunctionData(selector, data);
+        console.log(contractInterface.getFunction(functionName));
+        console.log(contractInterface.getSighash(contractInterface.getFunction(functionName)));
+        const sighash = contractInterface.getSighash(functionName);
+
+        const decoded = contractInterface.decodeFunctionData(functionName, `${sighash}${data}`);
 
         console.log({decoded});
 
@@ -105,15 +109,15 @@ class ResultsParser {
         ];
     }
 
-    parseOutputParameters(functionABI, selector, data) {
+    parseOutputParameters(functionABI, functionName, data) {
         console.log("parseOutputParameters");
-        console.log({functionABI, selector, data});
+        console.log({functionABI, functionName, data});
 
         const contractInterface = new ethers.utils.Interface([functionABI]);
 
         console.log({contractInterface});
 
-        const decoded = contractInterface.decodeFunctionResults(selector, data);
+        const decoded = contractInterface.decodeFunctionResult(functionName, data);
 
         console.log({decoded});
 
@@ -157,7 +161,7 @@ class ResultsParser {
 
         const selector =
             hasData && call.data.length >= 10 ? call.data.slice(0, 10) : null;
-        const rawInput = selector ? `0x${call.data.slice(10)}` : null;
+        const rawInput = selector ? call.data.slice(10) : null;
 
         let functionName,
             parsedInput,
@@ -175,7 +179,7 @@ class ResultsParser {
             if (rawInput) {
                 [, parsedInput] = this.parseInputParameters(
                     functionABI,
-                    selector,
+                    functionName,
                     rawInput
                 );
             }
@@ -183,8 +187,8 @@ class ResultsParser {
                 if (hasOutput) {
                     [orderedResults, parsedOutput] = this.parseOutputParameters(
                         functionABI,
-                        selector,
-                        `0x${returnData}`
+                        functionName,
+                        returnData
                     );
                 }
             } else {
