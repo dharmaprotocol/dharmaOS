@@ -13,6 +13,7 @@ const scenarios = [{
         minimumBoughtTokenAmount: "900000",
     },
     blockNumber: 11095000,
+    success: true,
     results: { boughtTokenAmount: '1007566' },
     events: [
         {
@@ -60,7 +61,7 @@ describe("Action Scripts", function() {
 
     for (let scenario of scenarios) {
 
-        let success;
+        let evaluatedSuccess;
         let evaluatedResults;
         let evaluatedEvents;
 
@@ -68,6 +69,7 @@ describe("Action Scripts", function() {
             actionScriptName,
             variables,
             blockNumber,
+            success: expectedSuccess,
             results: expectedResults = {},
             events: expectedEvents = [],
         } = scenario;
@@ -79,14 +81,14 @@ describe("Action Scripts", function() {
                     variables,
                     blockNumber
                 );
-                success = data.success;
+                evaluatedSuccess = data.success;
                 evaluatedResults = data.results;
                 evaluatedEvents  = data.events;
 
             });
 
-            it("success", async function() {
-                expect(success).to.equal(true);
+            it(`expect success to be ${expectedSuccess}`, async function() {
+                expect(evaluatedSuccess).to.equal(expectedSuccess);
             });
 
             for (const [resultName, resultValue] of Object.entries(expectedResults)) {
