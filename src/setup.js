@@ -231,160 +231,160 @@ const ERC20_ABI = [
 const getRandomArbitrary = (min, max) => (Math.random() * (max - min) + min);
 
 const longer = () => (
-  new Promise(
-    resolve => {setTimeout(() => {resolve()}, getRandomArbitrary(700, 5000))}
-  )
+    new Promise(
+        resolve => {setTimeout(() => {resolve()}, getRandomArbitrary(700, 5000))}
+    )
 );
 
 const get = async (url, params = {}, retries = 0) => {
-  try {
-    const response = await axios.get(url, params);
-    const data = response.data;
-    if (data.status === '0' && typeof data.result === 'string') {
-      throw new Error(`BAD REQUEST: ${data}`);
+    try {
+        const response = await axios.get(url, params);
+        const data = response.data;
+        if (data.status === '0' && typeof data.result === 'string') {
+            throw new Error(`BAD REQUEST: ${data}`);
+        }
+        return data;
+    } catch (error) {
+        if (retries > 3) {
+            console.log('MAX RETRIES EXCEEDED')
+            console.error(error);
+            process.exit(1);
+        }
+        await longer();
+        return await get(url, params, retries + 1);
     }
-    return data;
-  } catch (error) {
-    if (retries > 3) {
-      console.log('MAX RETRIES EXCEEDED')
-      console.error(error);
-      process.exit(1);
-    }
-    await longer();
-    return await get(url, params, retries + 1);
-  }
 }
 
 const getABI = async (account) => {
-  // TODO: first see if a file with account name is in `contractABIs` directory
-  const data = await get(
-    'https://api.etherscan.io/api',
-    {
-      params: {
-        module: 'contract',
-        action: 'getabi',
-        address: account,
-        apikey: process.env.ETHERSCAN_API_KEY,
-      }
-    }
-  );
+    // TODO: first see if a file with account name is in `contractABIs` directory
+    const data = await get(
+        'https://api.etherscan.io/api',
+        {
+            params: {
+                module: 'contract',
+                action: 'getabi',
+                address: account,
+                apikey: process.env.ETHERSCAN_API_KEY,
+            }
+        }
+    );
 
-  if (data && data.status === '1' && data.message === 'OK' && data.result) {
-  	// TODO: write ABI to file with account name in `contractABIs` directory
-  	return data.result;
-  } else {
-  	throw new Error(`bad Etherscan response: ${data}`);
-  }
+    if (data && data.status === '1' && data.message === 'OK' && data.result) {
+        // TODO: write ABI to file with account name in `contractABIs` directory
+        return data.result;
+    } else {
+        throw new Error(`bad Etherscan response: ${data}`);
+    }
 }
 
 async function evaluate(actionScriptName, variables, blockNumber) {
-	await hre.network.provider.request({
-	  method: "hardhat_reset",
-	  params: [{
-	    forking: {
-	      jsonRpcUrl: process.env.WEB3_PROVIDER_URL,
-	      blockNumber,
-	    }
-	  }]
-	});
+    await hre.network.provider.request({
+        method: "hardhat_reset",
+        params: [{
+            forking: {
+                jsonRpcUrl: process.env.WEB3_PROVIDER_URL,
+                blockNumber,
+            }
+        }]
+    });
 
-	const signers = await ethers.getSigners();
-	const signer = signers[0];
+    const signers = await ethers.getSigners();
+    const signer = signers[0];
 
-	const Wallet = await ethers.getContractFactory("Wallet");
-	const wallet = await Wallet.deploy(signer.address);
+    const Wallet = await ethers.getContractFactory("Wallet");
+    const wallet = await Wallet.deploy(signer.address);
 
-	const actionScript = await Validator.getActionScript(actionScriptName);
-	const { definitions, inputs } = actionScript;
+    const actionScript = await Validator.getActionScript(actionScriptName);
+    const { definitions, inputs } = actionScript;
 
-	const tokenDefinitions = Object.fromEntries(
-		definitions
-			.map(d => d.split(' '))
-			.filter(d => d[0] === 'Token')
-			.map(d => [d[1], d[2] in variables ? variables[d[2]] : d[2]])
-	);
+    const tokenDefinitions = Object.fromEntries(
+        definitions
+            .map(d => d.split(' '))
+            .filter(d => d[0] === 'Token')
+            .map(d => [d[1], d[2] in variables ? variables[d[2]] : d[2]])
+    );
 
-	const inputTokens = {};
-	for (let inputObjects of inputs) {
-		const [tokenName, inputVariable] = Object.entries(inputObjects).pop();
-		const inputValue = inputVariable in variables
-			? variables[inputVariable]
-			: inputVariable;
+    const inputTokens = {};
+    for (let inputObjects of inputs) {
+        const [tokenName, inputVariable] = Object.entries(inputObjects).pop();
+        const inputValue = inputVariable in variables
+            ? variables[inputVariable]
+            : inputVariable;
 
-		if (tokenName in inputTokens) {
-			inputTokens[tokenName] = inputTokens[tokenName].add(ethers.BigNumber.from(inputValue));
-		} else {
-			inputTokens[tokenName] = ethers.BigNumber.from(inputValue);
-		}
-	}
+        if (tokenName in inputTokens) {
+            inputTokens[tokenName] = inputTokens[tokenName].add(ethers.BigNumber.from(inputValue));
+        } else {
+            inputTokens[tokenName] = ethers.BigNumber.from(inputValue);
+        }
+    }
 
 
-	for (let [tokenName, amount] of Object.entries(inputTokens)) {
-		const balance = await signer.getBalance();
-		if (tokenName === 'ETHER') {
-			if (balance.lt(amount)) {
-				throw new Error(
-					`Ether input amount ${amount} exceeds available balance ${balance}`
-				);
-			}
+    for (let [tokenName, amount] of Object.entries(inputTokens)) {
+        const balance = await signer.getBalance();
+        if (tokenName === 'ETHER') {
+            if (balance.lt(amount)) {
+                throw new Error(
+                    `Ether input amount ${amount} exceeds available balance ${balance}`
+                );
+            }
 
-			const tx = await signer.sendTransaction({
-				to: wallet.address,
-				value: amount,
-			});
+            const tx = await signer.sendTransaction({
+                to: wallet.address,
+                value: amount,
+            });
 
-			const walletBalance = await ethers.provider.getBalance(wallet.address);
-			if (walletBalance.lt(amount)) {
-				throw new Error(
-					`Ether input amount ${amount} exceeds wallet balance ${walletBalance}`
-				);
-			}
-		} else {
-			const tokenAddress = tokenDefinitions[tokenName];
-			const token = new ethers.Contract(
-				tokenAddress,
-				["function balanceOf(address account) view returns (uint256 balance)"],
-				ethers.provider,
-			);
-			const router = new ethers.Contract(
-				"0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-				["function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline) payable returns (uint[] memory amounts)"],
-				signer
-			);
-			const tx = await router.swapETHForExactTokens(
-				amount,
-				["0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", tokenAddress],
-				wallet.address,
-				99999999999999,
-				{value: balance.div(2)}
-			);
-			const walletBalance = await token.balanceOf(wallet.address);
-			if (walletBalance.lt(amount)) {
-				throw new Error(
-					`Token input amount ${amount} exceeds wallet balance ${walletBalance}`
-				);
-			}
-		}
-	}
+            const walletBalance = await ethers.provider.getBalance(wallet.address);
+            if (walletBalance.lt(amount)) {
+                throw new Error(
+                    `Ether input amount ${amount} exceeds wallet balance ${walletBalance}`
+                );
+            }
+        } else {
+            const tokenAddress = tokenDefinitions[tokenName];
+            const token = new ethers.Contract(
+                tokenAddress,
+                ["function balanceOf(address account) view returns (uint256 balance)"],
+                ethers.provider,
+            );
+            const router = new ethers.Contract(
+                "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+                ["function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline) payable returns (uint[] memory amounts)"],
+                signer
+            );
+            const tx = await router.swapETHForExactTokens(
+                amount,
+                ["0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", tokenAddress],
+                wallet.address,
+                99999999999999,
+                {value: balance.div(2)}
+            );
+            const walletBalance = await token.balanceOf(wallet.address);
+            if (walletBalance.lt(amount)) {
+                throw new Error(
+                    `Token input amount ${amount} exceeds wallet balance ${walletBalance}`
+                );
+            }
+        }
+    }
 
-	const encoder = new Encoder(actionScriptName, variables, wallet.address);
-	await encoder.parseActionScriptDefinitions();
-	await encoder.constructCallsAndResultsFormat();
+    const encoder = new Encoder(actionScriptName, variables, wallet.address);
+    await encoder.parseActionScriptDefinitions();
+    await encoder.constructCallsAndResultsFormat();
 
-	const callResults = await wallet.callStatic.simulate(encoder.calls);
+    const callResults = await wallet.callStatic.simulate(encoder.calls);
 
-	const parserArgs = {
-		actionScriptName,
+    const parserArgs = {
+        actionScriptName,
         calls: encoder.calls,
         callResults,
-		callABIs: encoder.callABIs,
-		resultToParse: encoder.resultToParse,
+        callABIs: encoder.callABIs,
+        resultToParse: encoder.resultToParse,
         contract: wallet,
-	};
+    };
 
-	const resultsParser = new ResultsParser(parserArgs);
+    const resultsParser = new ResultsParser(parserArgs);
 
-	const { success, results } = await resultsParser.parse();
+    const { success, results } = await resultsParser.parse();
 
     let events = {};
     if (!!success) {
@@ -515,62 +515,6 @@ async function runTest(test) {
     }
 }
 
-runTest({
-	actionScriptName: "SWAP_ON_CURVE",
-	variables: {
-		soldTokenAmount: "1000000000000000000",
-		soldTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-		boughtTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-		curvePoolAddress: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
-		soldTokenIndex: 0,
-		boughtTokenIndex: 1,
-		minimumBoughtTokenAmount: "900000",
-	},
-	blockNumber: 11095000,
-    results: { boughtTokenAmount: '1007566' },
-    events: [
-      {
-        address: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-        name: 'Approval',
-        args: {
-          owner: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-          spender: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
-          value: '1000000000000000000'
-        }
-      },
-      {
-        address: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-        name: 'Transfer',
-        args: {
-          from: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-          to: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
-          value: '1000000000000000000'
-        }
-      },
-      {
-        address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-        name: 'Transfer',
-        args: {
-          from: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
-          to: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-          value: '1007566'
-        }
-      },
-      {
-        address: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
-        name: 'TokenExchange',
-        args: {
-          buyer: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-          sold_id: '0',
-          tokens_sold: '1000000000000000000',
-          bought_id: '1',
-          tokens_bought: '1007566'
-        }
-      }
-    ]
-})
-	.then(() => process.exit(0))
-	.catch(error => {
-		console.error(error);
-		process.exit(1);
-	});
+module.exports = {
+    evaluate,
+};
