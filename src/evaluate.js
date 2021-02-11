@@ -369,7 +369,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                 );
             }
 
-            const tx = await signer.sendTransaction({
+            await signer.sendTransaction({
                 to: wallet.address,
                 value: amount,
             });
@@ -384,27 +384,49 @@ async function evaluate(actionScriptName, variables, blockNumber) {
             }
         } else {
             const tokenAddress = tokenDefinitions[tokenName];
-            const token = new ethers.Contract(
-                tokenAddress,
-                [
-                    "function balanceOf(address account) view returns (uint256 balance)",
-                ],
-                ethers.provider
-            );
-            const router = new ethers.Contract(
-                "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-                [
-                    "function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline) payable returns (uint[] memory amounts)",
-                ],
-                signer
-            );
-            const tx = await router.swapETHForExactTokens(
-                amount,
-                ["0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", tokenAddress],
-                wallet.address,
-                99999999999999,
-                { value: balance.div(2) }
-            );
+            const wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+            let token;
+            if (tokenAddress === wethAddress) {
+                token = new ethers.Contract(
+                    wethAddress,
+                    [
+                        "function balanceOf(address account) view returns (uint256 balance)",
+                        "function deposit() payable",
+                        "function transfer(address to, uint256 amount) returns (bool)",
+                    ],
+                    signer
+                );
+                await token.deposit(
+                    { value: amount }
+                );
+
+                await token.transfer(
+                    wallet.address,
+                    amount
+                );
+            } else {
+                token = new ethers.Contract(
+                    tokenAddress,
+                    [
+                        "function balanceOf(address account) view returns (uint256 balance)",
+                    ],
+                    ethers.provider
+                );
+                const router = new ethers.Contract(
+                    "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+                    [
+                        "function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline) payable returns (uint[] memory amounts)",
+                    ],
+                    signer
+                );
+                await router.swapETHForExactTokens(
+                    amount,
+                    [wethAddress, tokenAddress],
+                    wallet.address,
+                    99999999999999,
+                    { value: balance.div(2) }
+                );
+            }
             const walletBalance = await token.balanceOf(wallet.address);
             if (walletBalance.lt(amount)) {
                 throw new Error(
