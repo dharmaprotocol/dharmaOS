@@ -2,7 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const ethers = require("hardhat").ethers;
 const YAML = require('yaml');
+const inquirer = require('inquirer');
 const { Validator } = require("./Validator");
+const { TestValidator } = require("./TestValidator");
 const { evaluate } = require("./evaluate");
 
 const generateSinglePassingTest = async (actionScriptName, variables, actionScriptTestName = null) => {
@@ -21,6 +23,12 @@ const generateSinglePassingTest = async (actionScriptName, variables, actionScri
         variables,
         blockNumber
     );
+
+    if (!success) {
+        console.error('Test failed!');
+        console.error({results});
+        process.exit(1);
+    }
 
     delete variables.wallet;
 
@@ -70,15 +78,154 @@ const createSinglePassingTestAndWrite = async (category, actionScriptName, varia
     process.exit(0);
 }
 
-const main = async () => {
-    await createSinglePassingTestAndWrite(
-        "compound",
-        "DEPOSIT_TO_COMPOUND",
+const getInputs = async () => {
+    const validator = new Validator();
+    await validator.parseActionScripts();
+    const actionScriptNames = validator.actionScripts.map(script => script.name);
+
+    const testValidator = new TestValidator();
+    testValidator.parseActionScriptTests();
+    const actionScriptTestNames = new Set(
+        testValidator.actionScriptTests.map(test => test.name)
+    );
+
+    const actionScriptNameChoices = actionScriptNames
+        .filter(name => !actionScriptTestNames.has(name));
+
+    const actionScriptNameChoice = await inquirer.prompt([
         {
-            suppliedTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-            suppliedAmount: "1000000000",
-            cTokenAddress: "0x39AA39c021dfbaE8faC545936693aC917d5E7563",
-        },
+            type: 'list',
+            name: 'actionScriptName',
+            message: 'Select an action script without existing tests:',
+            choices: actionScriptNameChoices,
+        }
+    ]);
+
+    const actionScriptName = actionScriptNameChoice.actionScriptName;
+    const actionScriptIndex = actionScriptNames.indexOf(actionScriptName);
+    const actionScriptCategory = validator.actionScriptCategories[actionScriptIndex];
+    const actionScript = validator.actionScripts[actionScriptIndex];
+
+    const variables = {};
+    const remainingVariables = {...actionScript.variables};
+    while (Object.keys(remainingVariables).length > 0) {
+        const variablesAndLabels = Object.entries(remainingVariables)
+            .map(([name, type]) => [name, type, `${name} (${type})`]);
+        const variableLabels = variablesAndLabels.map(x => x[2]);
+
+        const variableLabelChoice = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'variableLabel',
+                message: 'Choose a variable to specify:',
+                choices: variableLabels,
+            }
+        ]);
+        const variableLabel = variableLabelChoice.variableLabel;
+        const variableIndex = variableLabels.indexOf(variableLabel)
+        const [variableName, variableType] = variablesAndLabels[variableIndex].slice(0, 2);
+        delete remainingVariables[variableName];
+
+        const variableChoice = [{
+            name: variableName,
+            message: `Specify a value of type "${variableType}" for "${variableName}":`,
+            validate: (input => {
+              let result = false;
+              try {
+                if (variableType === 'address') {
+                  try {
+                    result = Validator.ensureValidChecksum(input);
+                  } catch (e) {}
+
+                  if (!result) {
+                    console.log();
+                    console.error('Invalid checksummed address, try again...');
+                  }
+                } else if (variableType === 'bytes') {
+                  result = (
+                    input.startsWith('0x') &&
+                    ethers.utils.isHexString(input)
+                  );
+                  if (!result) {
+                    console.log();
+                    console.error('Invalid bytes argument, try again...');
+                  }
+                } else if (variableType.startsWith('bytes') && !variableType.includes('[')) {
+                  result = (
+                    input.startsWith('0x') &&
+                    ethers.utils.isHexString(input)
+                  );
+                  if (!result) {
+                    console.log();
+                    console.error(`Invalid ${variableType} argument, try again...`);
+                  }
+                } else if (variableType.startsWith('uint')) {
+                  result = (
+                    (
+                      input.startsWith('0x') &&
+                      input.length < 67 &&
+                      ethers.utils.isHexString(input)
+                    ) ||
+                    (
+                      !input.startsWith('0x') &&
+                      parseInt(input, 10).toString(10) === input
+                    )
+                  );
+                  if (!result) {
+                    console.log();
+                    console.error(`Invalid ${variableType} argument, try again...`);
+                  }
+                } else if (variableType === 'bool') {
+                  result = (
+                    input.toLowerCase() === 'true' ||
+                    input.toLowerCase() === 'false' ||
+                    input.toLowerCase() === 'yes' ||
+                    input.toLowerCase() === 'no' ||
+                    input.toLowerCase() === 't' ||
+                    input.toLowerCase() === 'f' ||
+                    input.toLowerCase() === 'y' ||
+                    input.toLowerCase() === 'n' ||
+                    input === '1' ||
+                    input === '0' ||
+                    input === '0x' + '1'.padStart(64, '0') ||
+                    input === '0x' + '0'.padStart(64, '0') ||
+                    input === '0x1' ||
+                    input === '0x0' ||
+                    input === '0x01' ||
+                    input === '0x00'
+                  );
+                  if (!result) {
+                    console.log();
+                    console.error('Invalid boolean argument, try again...');
+                  }
+                } else {
+                  console.error('ERROR: unknown type!');
+                }
+              } catch (err) {
+                console.log();
+                console.error('Invalid input, try again...');
+              }
+              return result;
+            })
+        }];
+
+        const variableValue = await inquirer.prompt(variableChoice);
+        variables[variableName] = variableValue[variableName];
+    }
+
+    return {
+        name: actionScriptName,
+        category: actionScriptCategory,
+        variables,
+    }
+}
+
+const main = async () => {
+    const {name, category, variables} = await getInputs();
+    await createSinglePassingTestAndWrite(
+        category,
+        name,
+        variables
     );
 }
 

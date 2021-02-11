@@ -131,9 +131,20 @@ class Validator {
 	    	path.resolve(__dirname, '../action-scripts')
 	    );
 
-		this.actionScripts = filePaths
+	    const relevantFilepaths = filePaths
 			.map(x => [path.basename(x, '.yaml'), x])
-			.filter(x => x[0] !== '.DS_Store')
+			.filter(x => x[0] !== '.DS_Store');
+
+		this.actionScriptCategories = relevantFilepaths
+			.map(x => path.basename(path.dirname(x[1])));
+
+		if (this.actionScriptCategories.some(category => category === 'action-scripts')) {
+			throw new Error(
+				"Action scripts cannot be placed at the root level of the /action-scripts directory"
+			);
+		}
+
+		this.actionScripts = relevantFilepaths
 			.map(this.parseActionScriptByPath);
 	}
 
@@ -724,6 +735,8 @@ class Validator {
 	    		`Address "${address}" does not match checksum ${checksummed}`
 	    	);
 	    }
+
+	   	return true;
 	}
 }
 
