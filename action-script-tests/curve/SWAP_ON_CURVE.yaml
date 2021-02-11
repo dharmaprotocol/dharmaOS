@@ -34,7 +34,7 @@ tests:
         name: "Transfer"
         args:
           from: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"
-          to: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"
+          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
           value: "1007566"
       - address: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"
         name: "TokenExchange"
@@ -76,7 +76,7 @@ tests:
         name: "Transfer"
         args:
           from: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"
-          to: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"
+          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
           value: "1007566"
       - address: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"
         name: "TokenExchange"
