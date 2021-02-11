@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const hre = require("hardhat");
 const ethers = hre.ethers;
 const axios = require("axios");
@@ -255,26 +257,60 @@ const get = async (url, params = {}, retries = 0) => {
     }
 }
 
-const getABI = async (account) => {
-    // TODO: first see if a file with account name is in `contractABIs` directory
-    const data = await get(
-        'https://api.etherscan.io/api',
-        {
-            params: {
-                module: 'contract',
-                action: 'getabi',
-                address: account,
-                apikey: process.env.ETHERSCAN_API_KEY,
-            }
-        }
-    );
+const getFilePaths = (dir) => {
+    const dirents = fs.readdirSync(dir, { withFileTypes: true });
+    const files = dirents.map((dirent) => {
+        const res = path.resolve(dir, dirent.name);
+        return dirent.isDirectory() ? this.getFilePaths(res) : res;
+    });
+    return files.flat();
+}
 
-    if (data && data.status === '1' && data.message === 'OK' && data.result) {
-        // TODO: write ABI to file with account name in `contractABIs` directory
-        return data.result;
-    } else {
-        throw new Error(`bad Etherscan response: ${data}`);
+const getABI = async (account) => {
+    // first see if a file with account name is in `contractABIs` directory
+    const contractABIDir = path.resolve(__dirname, '../contractABIs');
+    try {
+      await fs.promises.mkdir(contractABIDir);
+    } catch (e) {}
+
+    const contractABIPath = `${path.resolve(contractABIDir, account.toLowerCase())}.json`;
+
+    let abi;
+    try {
+        abi = fs.readFileSync(contractABIPath, 'utf8');
+    } catch (error) {
+        const data = await get(
+            'https://api.etherscan.io/api',
+            {
+                params: {
+                    module: 'contract',
+                    action: 'getabi',
+                    address: account,
+                    apikey: process.env.ETHERSCAN_API_KEY,
+                }
+            }
+        );
+
+        if (data && data.status === '1' && data.message === 'OK' && data.result) {
+            abi = data.result;
+        } else {
+            throw new Error(`bad Etherscan response: ${data}`);
+        }
+
+        fs.writeFileSync(
+            contractABIPath,
+            abi,
+            'utf8',
+            (err) => {
+                if (err) {
+                    console.error(err);
+                    process.exit(1);
+                }
+            }
+        );
     }
+
+    return abi;
 }
 
 async function evaluate(actionScriptName, variables, blockNumber) {
@@ -430,6 +466,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                             currentEvent = contractInterface.parseLog(log);
                         } catch (error) {
                             console.error('ERROR', error.message);
+                            process.exit(1);
                         }
                     }
                 }
