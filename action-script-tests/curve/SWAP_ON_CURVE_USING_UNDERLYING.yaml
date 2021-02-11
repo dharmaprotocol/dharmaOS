@@ -1,0 +1,117 @@
+name: SWAP_ON_CURVE_USING_UNDERLYING
+blockNumber: 11837746
+tests:
+  - name: Swap tokens using underlying assets across a variety of Curve pools
+    success: true
+    variables:
+      curvePoolAddress: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+      soldTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      boughtTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+      soldTokenAmount: "1000000000000000000"
+      minimumBoughtTokenAmount: "900000"
+      soldTokenIndex: "0"
+      boughtTokenIndex: "1"
+    results:
+      boughtTokenAmount: "1000904"
+    events:
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Approval
+        args:
+          owner: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          spender: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+          value: "1000000000000000000"
+      - address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+        name: AccrueInterest
+        args:
+          cashPrior: "188087576742687077127248122"
+          interestAccumulated: "1780357256962932209287"
+          borrowIndex: "1068083209725122459"
+          totalBorrows: "1605753749867743843764060652"
+      - address: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+        name: AccrueInterest
+        args:
+          interestAccumulated: "2534270766"
+          borrowIndex: "1160063517570916704"
+          totalBorrows: "1274120415332611"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          to: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+          value: "1000000000000000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Approval
+        args:
+          owner: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+          spender: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+          value: "1000000000000000000"
+      - address: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B"
+        name: DistributedSupplierComp
+        args:
+          cToken: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+          supplier: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+          compDelta: "74789308706626218"
+          compSupplyIndex: "42954424577358387203261569945751912162658"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+          to: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+          value: "1000000000000000000"
+      - address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+        name: Mint
+        args:
+          minter: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+          mintAmount: "1000000000000000000"
+          mintTokens: "4745432781"
+      - address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+        name: Transfer
+        args:
+          from: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+          to: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+          value: "4745432781"
+      - address: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+        name: AccrueInterest
+        args:
+          interestAccumulated: "0"
+          borrowIndex: "1160063517570916704"
+          totalBorrows: "1274120415332611"
+      - address: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B"
+        name: DistributedSupplierComp
+        args:
+          cToken: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+          supplier: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+          compDelta: "154573172615814930"
+          compSupplyIndex: "26814151525775967831696725213615843671971"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+          to: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+          value: "1000904"
+      - address: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+        name: Transfer
+        args:
+          from: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+          to: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+          value: "4634972243"
+      - address: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+        name: Redeem
+        args:
+          redeemer: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+          redeemAmount: "1000904"
+          redeemTokens: "4634972243"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          value: "1000904"
+      - address: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
+        name: TokenExchangeUnderlying
+        args:
+          buyer: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          sold_id: "0"
+          tokens_sold: "1000000000000000000"
+          bought_id: "1"
+          tokens_bought: "1000904"

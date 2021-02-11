@@ -188,12 +188,27 @@ const getInputs = async () => {
                                 );
                             }
                         } else if (variableType.startsWith("uint")) {
+                            // TODO: check size and sign
                             result =
                                 (input.startsWith("0x") &&
                                     input.length < 67 &&
                                     ethers.utils.isHexString(input)) ||
                                 (!input.startsWith("0x") &&
-                                    parseInt(input, 10).toString(10) === input);
+                                    ethers.BigNumber.from(input).toString() === input);
+                            if (!result) {
+                                console.log();
+                                console.error(
+                                    `Invalid ${variableType} argument, try again...`
+                                );
+                            }
+                        } else if (variableType.startsWith("int")) {
+                            // TODO: check size
+                            result =
+                                (input.startsWith("0x") &&
+                                    input.length < 67 &&
+                                    ethers.utils.isHexString(input)) ||
+                                (!input.startsWith("0x") &&
+                                    ethers.BigNumber.from(input).toString() === input);
                             if (!result) {
                                 console.log();
                                 console.error(
