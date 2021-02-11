@@ -149,7 +149,7 @@ class ResultsParser {
                           138,
                           138 +
                               2 *
-                                  ethers.utils.BigNumber.from(
+                                  ethers.BigNumber.from(
                                       "0x" + hexString.slice(74, 138)
                                   ).toNumber()
                       )

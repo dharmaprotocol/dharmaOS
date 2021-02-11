@@ -396,18 +396,14 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                     ],
                     signer
                 );
-                await token.deposit(
-                    { value: amount }
-                );
+                await token.deposit({ value: amount });
 
-                await token.transfer(
-                    wallet.address,
-                    amount
-                );
+                await token.transfer(wallet.address, amount);
             } else {
                 token = new ethers.Contract(
                     tokenAddress,
                     [
+                        "event Transfer(address indexed src, address indexed dst, uint val)",
                         "function balanceOf(address account) view returns (uint256 balance)",
                     ],
                     ethers.provider
@@ -428,7 +424,96 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                         { value: balance.div(2) }
                     );
                 } catch (error) {
-                    throw new Error(`Could not obtain input token "${tokenAddress}" from Uniswap`);
+                    // find an account with sufficient Token amount, take over and transfer
+                    let accountToTakeOver;
+
+                    const checkedAccounts = new Set();
+
+                    let endBlock = blockNumber;
+                    let startBlock = blockNumber - 1000;
+
+                    while (startBlock > blockNumber - 10000000) {
+                        let foundAccount = false;
+
+                        const transferEvents = await token.queryFilter(
+                            "Transfer",
+                            startBlock,
+                            endBlock
+                        );
+
+                        const events = transferEvents
+                            .reverse()
+                            .filter((event) => {
+                                const account = event.args[1];
+                                const transferAmount = event.args[2];
+                                return (
+                                    transferAmount.gt(amount) &&
+                                    !checkedAccounts.has(account)
+                                );
+                            });
+
+                        for (let event of events) {
+                            accountToTakeOver = event.args[1];
+
+                            checkedAccounts.add(accountToTakeOver);
+
+                            const currentBalance = await token.balanceOf(
+                                accountToTakeOver
+                            );
+
+                            if (currentBalance.gt(amount)) {
+                                foundAccount = true;
+                                break;
+                            }
+                        }
+
+                        if (foundAccount) {
+                            break;
+                        }
+
+                        endBlock = startBlock;
+                        startBlock -= 1000;
+                    }
+
+                    await signer.sendTransaction({
+                        to: accountToTakeOver,
+                        value: ethers.utils.parseEther("1"),
+                    });
+
+                    await hre.network.provider.request({
+                        method: "hardhat_impersonateAccount",
+                        params: [accountToTakeOver],
+                    });
+
+                    const impersonatedSigner = await ethers.provider.getSigner(
+                        accountToTakeOver
+                    );
+
+                    token = new ethers.Contract(
+                        tokenAddress,
+                        [
+                            "function transfer(address to, uint256 amount) returns (bool)",
+                        ],
+                        impersonatedSigner
+                    );
+
+                    await token.transfer(wallet.address, amount);
+
+                    await hre.network.provider.request({
+                        method: "hardhat_stopImpersonatingAccount",
+                        params: [accountToTakeOver],
+                    });
+
+                    token = new ethers.Contract(
+                        tokenAddress,
+                        [
+                            "function balanceOf(address account) view returns (uint256 balance)",
+                        ],
+                        ethers.provider
+                    );
+
+                    // // find latest Transfer event for tokenAddress and take over account
+                    // throw new Error(`Could not obtain input token "${tokenAddress}" from Uniswap`);
                 }
             }
             const walletBalance = await token.balanceOf(wallet.address);
