@@ -419,13 +419,17 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                     ],
                     signer
                 );
-                await router.swapETHForExactTokens(
-                    amount,
-                    [wethAddress, tokenAddress],
-                    wallet.address,
-                    99999999999999,
-                    { value: balance.div(2) }
-                );
+                try {
+                    await router.swapETHForExactTokens(
+                        amount,
+                        [wethAddress, tokenAddress],
+                        wallet.address,
+                        99999999999999,
+                        { value: balance.div(2) }
+                    );
+                } catch (error) {
+                    throw new Error(`Could not obtain input token "${tokenAddress}" from Uniswap`);
+                }
             }
             const walletBalance = await token.balanceOf(wallet.address);
             if (walletBalance.lt(amount)) {
