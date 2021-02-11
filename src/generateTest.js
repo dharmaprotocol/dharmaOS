@@ -22,7 +22,13 @@ const generateSinglePassingTest = async (
 
     console.log(`Generating single test for ${actionScriptName}: ${testName}`);
 
-    const { success, results, events } = await evaluate(
+    const {
+        success,
+        results,
+        events,
+        parsedReturnData,
+        revertReason
+    } = await evaluate(
         actionScriptName,
         variables,
         blockNumber
@@ -30,7 +36,7 @@ const generateSinglePassingTest = async (
 
     if (!success) {
         console.error("Test failed!");
-        console.error({ results });
+        console.error({ results, revertReason, callResults: JSON.stringify(parsedReturnData, null, 2) });
         process.exit(1);
     }
 

@@ -91,7 +91,9 @@ class ResultsParser {
 
         return {
             success,
+            parsedReturnData: results,
             results: finalResults,
+            revertReason: this.revertReason,
         };
     }
 

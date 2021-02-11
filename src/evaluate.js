@@ -542,7 +542,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
 
     const resultsParser = new ResultsParser(parserArgs);
 
-    const { success, results } = await resultsParser.parse();
+    const { success, results, revertReason, parsedReturnData } = await resultsParser.parse();
 
     let events = {};
     if (!!success) {
@@ -638,6 +638,8 @@ async function evaluate(actionScriptName, variables, blockNumber) {
         success,
         results,
         events,
+        parsedReturnData,
+        revertReason,
     };
 }
 
