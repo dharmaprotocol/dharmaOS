@@ -20,5 +20,8 @@
     "hardhat": "^2.0.9",
     "js-sha3": "^0.8.0",
     "yaml": "^1.10.0"
+  },
+  "resolutions": {
+    "hardhat/mocha": "^8.0.0"
   }
 }

@@ -1,0 +1,35 @@
+name: DEPOSIT_ETH_TO_COMPOUND
+blockNumber: 11833957
+tests:
+  - name: Mint cETH from Compound using Ether
+    success: true
+    variables:
+      suppliedETHAmount: "1000000000000000000"
+    results:
+      cETHReceivedAmount: "4991591235"
+    events:
+      - address: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"
+        name: AccrueInterest
+        args:
+          interestAccumulated: "11306785267048382"
+          borrowIndex: "1048293503137184965"
+          totalBorrows: "118198687369214016932493"
+      - address: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B"
+        name: DistributedSupplierComp
+        args:
+          cToken: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"
+          supplier: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          compDelta: "0"
+          compSupplyIndex: "1442695140519487229184787997665195580541486"
+      - address: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"
+        name: Mint
+        args:
+          minter: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          mintAmount: "1000000000000000000"
+          mintTokens: "4991591230"
+      - address: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"
+        name: Transfer
+        args:
+          from: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"
+          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          value: "4991591230"

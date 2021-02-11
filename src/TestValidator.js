@@ -267,11 +267,12 @@ class TestValidator {
 	generateScenarios() {
 		this.scenarios = [];
 		for (const actionScriptTest of this.actionScriptTests) {
-			const { name, blockNumber, tests } = actionScriptTest;
+			const { name: actionScriptName, blockNumber, tests } = actionScriptTest;
 			for (const test of tests) {
-				const { success, variables, results, events} = test;
+				const { name: testName, success, variables, results, events} = test;
 				this.scenarios.push({
-					actionScriptName: name,
+					actionScriptName,
+					testName,
 					variables,
 					blockNumber,
 					success,

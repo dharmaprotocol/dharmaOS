@@ -1,0 +1,14 @@
+name: WRAP_ETHER
+blockNumber: 11836676
+tests:
+  - name: Wrap Ether, receiving Wrapped Ether
+    success: true
+    variables:
+      amount: "1000000000000000000"
+    results: {}
+    events:
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Deposit
+        args:
+          dst: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          wad: "1000000000000000000"

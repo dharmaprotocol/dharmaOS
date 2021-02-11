@@ -14,5 +14,9 @@ module.exports = {
         url,
       }
     }
+  },
+  mocha: {
+    timeout: 20000,
+    parallel: true
   }
 };
