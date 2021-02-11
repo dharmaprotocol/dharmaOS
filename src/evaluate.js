@@ -396,21 +396,45 @@ async function evaluate(actionScriptName, variables, blockNumber) {
         for (let log of logs) {
             let currentEvent = null;
             try {
+                // First try parsing the event using the wallet interface itself
                 currentEvent = wallet.interface.parseLog(log);
             } catch (error) {
                 try {
+                    // Next, try parsing it as an ERC20 token
                     const erc20Interface = new ethers.utils.Interface(ERC20_ABI);
                     currentEvent = erc20Interface.parseLog(log);
                 } catch (error) {
                     try {
+                        // Then try parsing via the contract ABI from Etherscan
                         const abi = await getABI(log.address);
                         const contractInterface = new ethers.utils.Interface(abi);
                         currentEvent = contractInterface.parseLog(log);
                     } catch (error) {
-                        console.error('ERROR', error.message);
+                        try {
+                            // Last-ditch attempt: look for a proxy contract ABI
+                            const etherscanScrapeHTML = await get(
+                                `https://etherscan.io/address/${log.address}#readProxyContract`
+                            )
+                            const search = 'ABI for the implementation contract at';
+                            const relevantLine = etherscanScrapeHTML
+                                .split('\n')
+                                .filter(line => line.includes(search))
+                                .pop();
+                            const proxyAddress = relevantLine
+                                .match(/<a href='\/address\/(.*?)#code'>/g)[0]
+                                .slice(18, -7);
+
+                            const proxy = ethers.utils.getAddress(proxyAddress);
+                            const abi = await getABI(proxy);
+                            const contractInterface = new ethers.utils.Interface(abi);
+                            currentEvent = contractInterface.parseLog(log);
+                        } catch (error) {
+                            console.error('ERROR', error.message);
+                        }
                     }
                 }
             }
+
             const allArgs = Object.entries({...currentEvent.args});
             const namedArgs = Object.fromEntries(
                 allArgs
