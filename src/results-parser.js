@@ -3,7 +3,6 @@ const ethers = hre.ethers;
 const { Validator } = require("./Validator.js");
 
 class ResultsParser {
-
     constructor(args) {
         const {
             actionScriptName,
@@ -15,7 +14,7 @@ class ResultsParser {
             variables,
         } = args;
 
-        this.actionScriptName= actionScriptName;
+        this.actionScriptName = actionScriptName;
         this.calls = calls;
         this.callResults = callResults;
         this.callABIs = callABIs;
@@ -27,7 +26,7 @@ class ResultsParser {
     async parse() {
         const { ok, returnData } = this.callResults;
 
-        const success = ok.every(x => x);
+        const success = ok.every((x) => x);
         const rawResults = this.calls.map((x, i) => [x, ok[i], returnData[i]]);
 
         const results = await Promise.all(
@@ -55,8 +54,11 @@ class ResultsParser {
             }
 
             for (let [resultIndex, resultName] of Object.entries(callTarget)) {
-                const rawParsedResult = results[callIndex].orderedResults[resultIndex];
-                const parsedResult = ethers.BigNumber.isBigNumber(rawParsedResult)
+                const rawParsedResult =
+                    results[callIndex].orderedResults[resultIndex];
+                const parsedResult = ethers.BigNumber.isBigNumber(
+                    rawParsedResult
+                )
                     ? rawParsedResult.toString()
                     : rawParsedResult;
                 parsedResults[resultName] = parsedResult;
@@ -89,7 +91,7 @@ class ResultsParser {
 
         return {
             success,
-            results: finalResults
+            results: finalResults,
         };
     }
 
@@ -98,14 +100,19 @@ class ResultsParser {
 
         const sighash = contractInterface.getSighash(functionName);
 
-        const decoded = contractInterface.decodeFunctionData(functionName, `${sighash}${data}`);
+        const decoded = contractInterface.decodeFunctionData(
+            functionName,
+            `${sighash}${data}`
+        );
 
         return [
             decoded,
             Object.fromEntries(
                 Object.entries(functionABI).map(([i, x]) => [
                     x.name ? x.name : x.type,
-                    ethers.BigNumber.isBigNumber(decoded[i]) ? decoded[i].toString() : decoded[i],
+                    ethers.BigNumber.isBigNumber(decoded[i])
+                        ? decoded[i].toString()
+                        : decoded[i],
                 ])
             ),
         ];
@@ -114,14 +121,19 @@ class ResultsParser {
     parseOutputParameters(functionABI, functionName, data) {
         const contractInterface = new ethers.utils.Interface([functionABI]);
 
-        const decoded = contractInterface.decodeFunctionResult(functionName, data);
+        const decoded = contractInterface.decodeFunctionResult(
+            functionName,
+            data
+        );
 
         return [
             decoded,
             Object.fromEntries(
                 Object.entries(functionABI).map(([i, x]) => [
                     x.name ? x.name : x.type,
-                    ethers.BigNumber.isBigNumber(decoded[i]) ? decoded[i].toString() : decoded[i],
+                    ethers.BigNumber.isBigNumber(decoded[i])
+                        ? decoded[i].toString()
+                        : decoded[i],
                 ])
             ),
         ];
@@ -129,19 +141,19 @@ class ResultsParser {
 
     parseRevertReason(hexString) {
         return hexString &&
-        hexString.startsWith(`0x08c379a${"".padStart(63, "0")}20`) &&
-        hexString.length >= 202
+            hexString.startsWith(`0x08c379a${"".padStart(63, "0")}20`) &&
+            hexString.length >= 202
             ? ethers.utils.toUtf8String(
-                "0x" +
-                hexString.slice(
-                    138,
-                    138 +
-                    2 *
-                    ethers.utils.BigNumber.from(
-                        "0x" + hexString.slice(74, 138)
-                    ).toNumber()
-                )
-            )
+                  "0x" +
+                      hexString.slice(
+                          138,
+                          138 +
+                              2 *
+                                  ethers.utils.BigNumber.from(
+                                      "0x" + hexString.slice(74, 138)
+                                  ).toNumber()
+                      )
+              )
             : "(no revert reason)";
     }
 
@@ -238,7 +250,6 @@ class ResultsParser {
     }
 }
 
-
 module.exports = {
-    ResultsParser
+    ResultsParser,
 };
