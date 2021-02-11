@@ -1,9 +1,9 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 const hre = require("hardhat");
 const ethers = hre.ethers;
 const axios = require("axios");
-const { Validator } = require('./Validator');
+const { Validator } = require("./Validator");
 const { Encoder } = require("./Encoder");
 const { ResultsParser } = require("./results-parser");
 
@@ -230,32 +230,33 @@ const ERC20_ABI = [
     },
 ];
 
-const getRandomArbitrary = (min, max) => (Math.random() * (max - min) + min);
+const getRandomArbitrary = (min, max) => Math.random() * (max - min) + min;
 
-const longer = () => (
-    new Promise(
-        resolve => {setTimeout(() => {resolve()}, getRandomArbitrary(700, 5000))}
-    )
-);
+const longer = () =>
+    new Promise((resolve) => {
+        setTimeout(() => {
+            resolve();
+        }, getRandomArbitrary(700, 5000));
+    });
 
 const get = async (url, params = {}, retries = 0) => {
     try {
         const response = await axios.get(url, params);
         const data = response.data;
-        if (data.status === '0' && typeof data.result === 'string') {
+        if (data.status === "0" && typeof data.result === "string") {
             throw new Error(`BAD REQUEST: ${data}`);
         }
         return data;
     } catch (error) {
         if (retries > 3) {
-            console.log('MAX RETRIES EXCEEDED')
+            console.log("MAX RETRIES EXCEEDED");
             console.error(error);
             process.exit(1);
         }
         await longer();
         return await get(url, params, retries + 1);
     }
-}
+};
 
 const getFilePaths = (dir) => {
     const dirents = fs.readdirSync(dir, { withFileTypes: true });
@@ -264,64 +265,66 @@ const getFilePaths = (dir) => {
         return dirent.isDirectory() ? this.getFilePaths(res) : res;
     });
     return files.flat();
-}
+};
 
 const getABI = async (account) => {
     // first see if a file with account name is in `contractABIs` directory
-    const contractABIDir = path.resolve(__dirname, '../contractABIs');
+    const contractABIDir = path.resolve(__dirname, "../contractABIs");
     try {
-      await fs.promises.mkdir(contractABIDir);
+        await fs.promises.mkdir(contractABIDir);
     } catch (e) {}
 
-    const contractABIPath = `${path.resolve(contractABIDir, account.toLowerCase())}.json`;
+    const contractABIPath = `${path.resolve(
+        contractABIDir,
+        account.toLowerCase()
+    )}.json`;
 
     let abi;
     try {
-        abi = fs.readFileSync(contractABIPath, 'utf8');
+        abi = fs.readFileSync(contractABIPath, "utf8");
     } catch (error) {
-        const data = await get(
-            'https://api.etherscan.io/api',
-            {
-                params: {
-                    module: 'contract',
-                    action: 'getabi',
-                    address: account,
-                    apikey: process.env.ETHERSCAN_API_KEY,
-                }
-            }
-        );
+        const data = await get("https://api.etherscan.io/api", {
+            params: {
+                module: "contract",
+                action: "getabi",
+                address: account,
+                apikey: process.env.ETHERSCAN_API_KEY,
+            },
+        });
 
-        if (data && data.status === '1' && data.message === 'OK' && data.result) {
+        if (
+            data &&
+            data.status === "1" &&
+            data.message === "OK" &&
+            data.result
+        ) {
             abi = data.result;
         } else {
             throw new Error(`bad Etherscan response: ${data}`);
         }
 
-        fs.writeFileSync(
-            contractABIPath,
-            abi,
-            'utf8',
-            (err) => {
-                if (err) {
-                    console.error(err);
-                    process.exit(1);
-                }
+        fs.writeFileSync(contractABIPath, abi, "utf8", (err) => {
+            if (err) {
+                console.error(err);
+                process.exit(1);
             }
-        );
+        });
     }
 
     return abi;
-}
+};
 
 async function evaluate(actionScriptName, variables, blockNumber) {
     await hre.network.provider.request({
         method: "hardhat_reset",
-        params: [{
-            forking: {
-                jsonRpcUrl: process.env.WEB3_PROVIDER_URL,
-                blockNumber,
-            }
-        }]
+        params: [
+            {
+                forking: {
+                    jsonRpcUrl: process.env.WEB3_PROVIDER_URL,
+                    blockNumber,
+                },
+            },
+        ],
     });
 
     const signers = await ethers.getSigners();
@@ -335,29 +338,31 @@ async function evaluate(actionScriptName, variables, blockNumber) {
 
     const tokenDefinitions = Object.fromEntries(
         definitions
-            .map(d => d.split(' '))
-            .filter(d => d[0] === 'Token')
-            .map(d => [d[1], d[2] in variables ? variables[d[2]] : d[2]])
+            .map((d) => d.split(" "))
+            .filter((d) => d[0] === "Token")
+            .map((d) => [d[1], d[2] in variables ? variables[d[2]] : d[2]])
     );
 
     const inputTokens = {};
     for (let inputObjects of inputs) {
         const [tokenName, inputVariable] = Object.entries(inputObjects).pop();
-        const inputValue = inputVariable in variables
-            ? variables[inputVariable]
-            : inputVariable;
+        const inputValue =
+            inputVariable in variables
+                ? variables[inputVariable]
+                : inputVariable;
 
         if (tokenName in inputTokens) {
-            inputTokens[tokenName] = inputTokens[tokenName].add(ethers.BigNumber.from(inputValue));
+            inputTokens[tokenName] = inputTokens[tokenName].add(
+                ethers.BigNumber.from(inputValue)
+            );
         } else {
             inputTokens[tokenName] = ethers.BigNumber.from(inputValue);
         }
     }
 
-
     for (let [tokenName, amount] of Object.entries(inputTokens)) {
         const balance = await signer.getBalance();
-        if (tokenName === 'ETHER') {
+        if (tokenName === "ETHER") {
             if (balance.lt(amount)) {
                 throw new Error(
                     `Ether input amount ${amount} exceeds available balance ${balance}`
@@ -369,7 +374,9 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                 value: amount,
             });
 
-            const walletBalance = await ethers.provider.getBalance(wallet.address);
+            const walletBalance = await ethers.provider.getBalance(
+                wallet.address
+            );
             if (walletBalance.lt(amount)) {
                 throw new Error(
                     `Ether input amount ${amount} exceeds wallet balance ${walletBalance}`
@@ -379,12 +386,16 @@ async function evaluate(actionScriptName, variables, blockNumber) {
             const tokenAddress = tokenDefinitions[tokenName];
             const token = new ethers.Contract(
                 tokenAddress,
-                ["function balanceOf(address account) view returns (uint256 balance)"],
-                ethers.provider,
+                [
+                    "function balanceOf(address account) view returns (uint256 balance)",
+                ],
+                ethers.provider
             );
             const router = new ethers.Contract(
                 "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-                ["function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline) payable returns (uint[] memory amounts)"],
+                [
+                    "function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline) payable returns (uint[] memory amounts)",
+                ],
                 signer
             );
             const tx = await router.swapETHForExactTokens(
@@ -392,7 +403,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                 ["0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", tokenAddress],
                 wallet.address,
                 99999999999999,
-                {value: balance.div(2)}
+                { value: balance.div(2) }
             );
             const walletBalance = await token.balanceOf(wallet.address);
             if (walletBalance.lt(amount)) {
@@ -437,24 +448,29 @@ async function evaluate(actionScriptName, variables, blockNumber) {
             } catch (error) {
                 try {
                     // Next, try parsing it as an ERC20 token
-                    const erc20Interface = new ethers.utils.Interface(ERC20_ABI);
+                    const erc20Interface = new ethers.utils.Interface(
+                        ERC20_ABI
+                    );
                     currentEvent = erc20Interface.parseLog(log);
                 } catch (error) {
                     try {
                         // Then try parsing via the contract ABI from Etherscan
                         const abi = await getABI(log.address);
-                        const contractInterface = new ethers.utils.Interface(abi);
+                        const contractInterface = new ethers.utils.Interface(
+                            abi
+                        );
                         currentEvent = contractInterface.parseLog(log);
                     } catch (error) {
                         try {
                             // Last-ditch attempt: look for a proxy contract ABI
                             const etherscanScrapeHTML = await get(
                                 `https://etherscan.io/address/${log.address}#readProxyContract`
-                            )
-                            const search = 'ABI for the implementation contract at';
+                            );
+                            const search =
+                                "ABI for the implementation contract at";
                             const relevantLine = etherscanScrapeHTML
-                                .split('\n')
-                                .filter(line => line.includes(search))
+                                .split("\n")
+                                .filter((line) => line.includes(search))
                                 .pop();
                             const proxyAddress = relevantLine
                                 .match(/<a href='\/address\/(.*?)#code'>/g)[0]
@@ -462,50 +478,56 @@ async function evaluate(actionScriptName, variables, blockNumber) {
 
                             const proxy = ethers.utils.getAddress(proxyAddress);
                             const abi = await getABI(proxy);
-                            const contractInterface = new ethers.utils.Interface(abi);
+                            const contractInterface = new ethers.utils.Interface(
+                                abi
+                            );
                             currentEvent = contractInterface.parseLog(log);
                         } catch (error) {
-                            console.error('ERROR', error.message);
+                            console.error("ERROR", error.message);
                             process.exit(1);
                         }
                     }
                 }
             }
 
-            const allArgs = Object.entries({...currentEvent.args});
+            const allArgs = Object.entries({ ...currentEvent.args });
             const namedArgs = Object.fromEntries(
                 allArgs
                     .slice(allArgs.length / 2)
-                    .map(([key, value]) => [key, ethers.BigNumber.isBigNumber(value) ? value.toString() : value])
+                    .map(([key, value]) => [
+                        key,
+                        ethers.BigNumber.isBigNumber(value)
+                            ? value.toString()
+                            : value,
+                    ])
             );
 
             const event = {
                 address: log.address,
                 name: currentEvent.name,
                 args: namedArgs,
-            }
+            };
 
             rawEvents.push(event);
         }
 
         const hasFailures = rawEvents.some(
-            event => event.address === wallet.address && event.name === 'CallFailure'
+            (event) =>
+                event.address === wallet.address && event.name === "CallFailure"
         );
 
         if (hasFailures) {
             throw new Error("FAILING!");
         }
 
-        events = rawEvents.filter(
-            event => event.address !== wallet.address
-        );
+        events = rawEvents.filter((event) => event.address !== wallet.address);
     }
 
     return {
         success,
         results,
         events,
-    }
+    };
 }
 
 module.exports = {

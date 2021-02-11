@@ -1,4 +1,4 @@
-const { Validator } = require('./Validator');
+const { Validator } = require("./Validator");
 const hre = require("hardhat");
 const ethers = hre.ethers;
 
@@ -226,7 +226,6 @@ const ERC20_ABI = [
 ];
 
 class Encoder {
-
     static async encode(actionScriptName, variables, wallet) {
         const encoder = new Encoder(actionScriptName, variables, wallet);
 
@@ -251,7 +250,14 @@ class Encoder {
 
         const contracts = Object.fromEntries(
             Object.entries(this.targetContracts).map(([name, value]) => {
-                return [name, new ethers.Contract(value.address, value.abi, ethers.provider)];
+                return [
+                    name,
+                    new ethers.Contract(
+                        value.address,
+                        value.abi,
+                        ethers.provider
+                    ),
+                ];
             })
         );
 
@@ -335,7 +341,10 @@ class Encoder {
                 const contract = contracts[contractName];
 
                 const to = contract.address;
-                const data = contract.interface.encodeFunctionData(targetFunction, appliedArgs);
+                const data = contract.interface.encodeFunctionData(
+                    targetFunction,
+                    appliedArgs
+                );
 
                 this.calls.push({
                     to,
@@ -344,7 +353,7 @@ class Encoder {
                 });
 
                 const callABIIndex = this.targetContracts[contractName].abi
-                    .map(f => f.name)
+                    .map((f) => f.name)
                     .indexOf(targetFunction);
 
                 if (callABIIndex === -1) {
@@ -494,24 +503,24 @@ class Encoder {
                             name: contractFunctionName,
                             outputs: !!outputDefinitions
                                 ? Object.entries(outputDefinitions).map(
-                                    ([i, returnValue]) => ({
-                                        name: `${contractFunctionName}ReturnValue${i}`,
-                                        type: returnValue.trim(" "),
-                                        internalType: returnValue.trim(" "),
-                                    })
-                                )
+                                      ([i, returnValue]) => ({
+                                          name: `${contractFunctionName}ReturnValue${i}`,
+                                          type: returnValue.trim(" "),
+                                          internalType: returnValue.trim(" "),
+                                      })
+                                  )
                                 : [],
                             payable,
                             stateMutability: payable ? "payable" : "nonpayable",
                             type: "function",
                             inputs: !!contractFunctionArguments
                                 ? Object.entries(contractFunctionArguments).map(
-                                    ([i, arg]) => ({
-                                        name: `${contractFunctionName}Argument${i}`,
-                                        type: arg.trim(" "),
-                                        internalType: arg.trim(" "),
-                                    })
-                                )
+                                      ([i, arg]) => ({
+                                          name: `${contractFunctionName}Argument${i}`,
+                                          type: arg.trim(" "),
+                                          internalType: arg.trim(" "),
+                                      })
+                                  )
                                 : [],
                         };
                     }
@@ -528,7 +537,6 @@ class Encoder {
     }
 }
 
-
 module.exports = {
-    Encoder
+    Encoder,
 };
