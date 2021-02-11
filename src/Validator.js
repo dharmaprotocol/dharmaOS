@@ -83,12 +83,12 @@ class Validator {
 
 	static RESERVED_KEYWORDS = new Set(['wallet', 'ETHER']);
 
-	async getFilePaths(dir) {
-		const dirents = await fs.promises.readdir(dir, { withFileTypes: true });
-		const files = await Promise.all(dirents.map((dirent) => {
+	getFilePaths(dir) {
+		const dirents = fs.readdirSync(dir, { withFileTypes: true });
+		const files = dirents.map((dirent) => {
 			const res = path.resolve(dir, dirent.name);
 		    return dirent.isDirectory() ? this.getFilePaths(res) : res;
-		}));
+		});
 		return files.flat();
 	}
 
@@ -126,8 +126,8 @@ class Validator {
 		return parsed;
 	}
 
-	async parseActionScripts() {
-	    const filePaths = await this.getFilePaths(
+	parseActionScripts() {
+	    const filePaths = this.getFilePaths(
 	    	path.resolve(__dirname, '../action-scripts')
 	    );
 
