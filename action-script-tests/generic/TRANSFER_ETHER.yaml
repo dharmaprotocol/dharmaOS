@@ -1,0 +1,10 @@
+name: TRANSFER_ETHER
+blockNumber: 11837699
+tests:
+  - name: Transfer Ether
+    success: true
+    variables:
+      to: "0x7e4A8391C728fEd9069B2962699AB416628B19Fa"
+      amount: "1000000000000000000"
+    results: {}
+    events: []

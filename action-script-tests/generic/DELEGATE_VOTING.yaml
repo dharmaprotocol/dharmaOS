@@ -1,0 +1,17 @@
+name: DELEGATE_VOTING
+blockNumber: 11837590
+tests:
+  - name: Delegate voting power in supported governance tokens to another account
+    success: true
+    variables:
+      governanceTokenAddress: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
+      delegateAddress: "0x7e4A8391C728fEd9069B2962699AB416628B19Fa"
+    results:
+      delegatedTokens: "0"
+    events:
+      - address: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
+        name: DelegateChanged
+        args:
+          delegator: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          fromDelegate: "0x0000000000000000000000000000000000000000"
+          toDelegate: "0x7e4A8391C728fEd9069B2962699AB416628B19Fa"
