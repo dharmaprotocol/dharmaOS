@@ -10,9 +10,9 @@ class TestValidator {
 		const testValidator = new TestValidator();
 		await testValidator.parseActionScriptTests();
 		testValidator.validateActionScriptTests();
-		return testValidator.actionScriptTests;
+		testValidator.generateScenarios();
+		return testValidator.scenarios;
 	}
-
 
 	static TYPE_CHECKERS = {
 		string: (x => (x && (typeof x === 'string' || x instanceof String))),
@@ -260,6 +260,24 @@ class TestValidator {
 					// TODO: import contract ABI from file and use to validate
 					// event argument types
 				}
+			}
+		}
+	}
+
+	generateScenarios() {
+		this.scenarios = [];
+		for (const actionScriptTest of this.actionScriptTests) {
+			const { name, blockNumber, tests } = actionScriptTest;
+			for (const test of tests) {
+				const { success, variables, results, events} = test;
+				this.scenarios.push({
+					actionScriptName: name,
+					variables,
+					blockNumber,
+					success,
+					results,
+					events,
+				})
 			}
 		}
 	}
