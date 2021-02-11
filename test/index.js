@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { evaluate } = require("../src/setup");
+const { evaluate } = require("../src/evaluate");
 const { TestValidator } = require("../src/TestValidator");
 
 const testScenario = async (scenario) => {
