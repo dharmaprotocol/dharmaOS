@@ -1,0 +1,49 @@
+name: DEPOSIT_TO_COMPOUND
+blockNumber: 11834096
+tests:
+  - name: Mint cTokens from Compound using supported tokens
+    success: true
+    variables:
+      suppliedTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+      suppliedAmount: "1000000000"
+      cTokenAddress: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+    results:
+      cTokenReceivedAmount: "4631597501554"
+    events:
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Approval
+        args:
+          owner: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          spender: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+          value: "1000000000"
+      - address: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+        name: AccrueInterest
+        args:
+          interestAccumulated: "1285005647"
+          borrowIndex: "1159812157739029176"
+          totalBorrows: "1252309977051178"
+      - address: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B"
+        name: DistributedSupplierComp
+        args:
+          cToken: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+          supplier: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          compDelta: "0"
+          compSupplyIndex: "26777329816222565558350119020251786571045"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          to: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+          value: "1000000000"
+      - address: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+        name: Mint
+        args:
+          minter: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          mintAmount: "1000000000"
+          mintTokens: "4631597257846"
+      - address: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+        name: Transfer
+        args:
+          from: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          value: "4631597257846"

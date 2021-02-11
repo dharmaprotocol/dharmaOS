@@ -230,8 +230,8 @@ class Encoder {
     static async encode(actionScriptName, variables, wallet) {
         const encoder = new Encoder(actionScriptName, variables, wallet);
 
-        await encoder.parseActionScriptDefinitions();
-        await encoder.constructCallsAndResultsFormat();
+        const targetContracts = await encoder.parseActionScriptDefinitions();
+        await encoder.constructCallsAndResultsFormat(targetContracts);
 
         return encoder.calls;
     }
@@ -242,7 +242,7 @@ class Encoder {
         this.variables["wallet"] = wallet;
     }
 
-    async constructCallsAndResultsFormat() {
+    async constructCallsAndResultsFormat(targetContracts) {
         const script = await Validator.getActionScript(this.actionScriptName);
 
         this.calls = [];
@@ -250,8 +250,9 @@ class Encoder {
         this.resultToParse = {};
 
         const contracts = Object.fromEntries(
-            Object.entries(this.targetContracts).map(([name, value]) => {
-                return [name, new ethers.Contract(value.address, value.abi, ethers.provider)];
+            Object.entries(targetContracts).map(([name, value]) => {
+                const contract = new ethers.Contract(value.address, value.abi);
+                return [name, contract];
             })
         );
 
@@ -279,8 +280,8 @@ class Encoder {
 
                 if (payableArg in this.variables) {
                     appliedPayableArg = this.variables[payableArg];
-                } else if (payableArg in this.targetContracts) {
-                    appliedPayableArg = this.targetContracts[payableArg]
+                } else if (payableArg in targetContracts) {
+                    appliedPayableArg = targetContracts[payableArg]
                         .address;
                 } else {
                     appliedPayableArg = payableArg;
@@ -291,8 +292,8 @@ class Encoder {
                 if (arg in this.variables) {
                     const appliedArg = this.variables[arg];
                     appliedArgs.push(appliedArg);
-                } else if (arg in this.targetContracts) {
-                    appliedArgs.push(this.targetContracts[arg].address);
+                } else if (arg in targetContracts) {
+                    appliedArgs.push(targetContracts[arg].address);
                 } else {
                     appliedArgs.push(arg);
                 }
@@ -335,7 +336,13 @@ class Encoder {
                 const contract = contracts[contractName];
 
                 const to = contract.address;
-                const data = contract.interface.encodeFunctionData(targetFunction, appliedArgs);
+                let data;
+                try {
+                    data = contract.interface.encodeFunctionData(targetFunction, appliedArgs);
+                } catch (error) {
+                    // TODO: track down source of duplicate target contract ABIs!
+                    throw new Error(error.message)
+                }
 
                 this.calls.push({
                     to,
@@ -343,7 +350,7 @@ class Encoder {
                     data,
                 });
 
-                const callABIIndex = this.targetContracts[contractName].abi
+                const callABIIndex = targetContracts[contractName].abi
                     .map(f => f.name)
                     .indexOf(targetFunction);
 
@@ -352,7 +359,7 @@ class Encoder {
                 }
 
                 this.callABIs.push(
-                    this.targetContracts[contractName].abi[callABIIndex]
+                    targetContracts[contractName].abi[callABIIndex]
                 );
 
                 // parse results
@@ -379,7 +386,7 @@ class Encoder {
         const script = await Validator.getActionScript(this.actionScriptName);
         const definitions = script.definitions || [];
 
-        this.targetContracts = {};
+        const targetContracts = {};
         this.targetFunctions = {
             transfer: "transfer",
             transferFrom: "transferFrom",
@@ -402,6 +409,7 @@ class Encoder {
             let name;
             let address;
             let functionName;
+            let functionABI;
             let contractName;
             let candidateAddress;
 
@@ -418,7 +426,7 @@ class Encoder {
                         address = candidateAddress;
                     }
 
-                    this.targetContracts[name] = {
+                    targetContracts[name] = {
                         address,
                         abi: [],
                         namedFunctions: {},
@@ -436,7 +444,7 @@ class Encoder {
                         address = candidateAddress;
                     }
 
-                    this.targetContracts[name] = {
+                    targetContracts[name] = {
                         address,
                         abi: ERC20_ABI,
                         namedFunctions: {},
@@ -456,7 +464,6 @@ class Encoder {
                         functionSignature = functionSignature.slice(0, -8);
                     }
 
-                    let functionABI = {};
                     let contractFunctionName;
                     if (functionSignature === "fallback") {
                         functionSignature = "()";
@@ -516,7 +523,13 @@ class Encoder {
                         };
                     }
 
-                    this.targetContracts[contractName].abi.push(functionABI);
+                    if (!!functionABI) {
+                        //console.log("PUSHING")
+                        //console.log(contractName)
+                        //console.log(functionABI)
+                        targetContracts[contractName].abi.push(functionABI);
+                        //console.log(targetContracts[contractName].abi);
+                    }
 
                     this.targetFunctions[functionName] = contractFunctionName;
 
@@ -525,6 +538,8 @@ class Encoder {
                     break;
             }
         }
+
+        return targetContracts;
     }
 }
 

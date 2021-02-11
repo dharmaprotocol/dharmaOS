@@ -368,8 +368,9 @@ async function evaluate(actionScriptName, variables, blockNumber) {
     }
 
     const encoder = new Encoder(actionScriptName, variables, wallet.address);
-    await encoder.parseActionScriptDefinitions();
-    await encoder.constructCallsAndResultsFormat();
+    const targetContracts = await encoder.parseActionScriptDefinitions();
+    console.log({targetContracts});
+    await encoder.constructCallsAndResultsFormat(targetContracts);
 
     const callResults = await wallet.callStatic.simulate(encoder.calls);
 
