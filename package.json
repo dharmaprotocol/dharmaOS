@@ -9,7 +9,7 @@
   "private": true,
   "scripts": {
     "build": "npx hardhat compile && node src/validate.js",
-    "test": "node src/test.js"
+    "test": "npx hardhat test"
   },
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.1",

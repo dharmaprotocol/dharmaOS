@@ -6,9 +6,9 @@ const { Validator } = require('./Validator');
 
 
 class TestValidator {
-	static async call() {
+	static call() {
 		const testValidator = new TestValidator();
-		await testValidator.parseActionScriptTests();
+		testValidator.parseActionScriptTests();
 		testValidator.validateActionScriptTests();
 		testValidator.generateScenarios();
 		return testValidator.scenarios;
@@ -76,12 +76,12 @@ class TestValidator {
 
 	static RESERVED_KEYWORDS = new Set(['wallet', 'ETHER']);
 
-	async getFilePaths(dir) {
-		const dirents = await fs.promises.readdir(dir, { withFileTypes: true });
-		const files = await Promise.all(dirents.map((dirent) => {
+	getFilePaths(dir) {
+		const dirents = fs.readdirSync(dir, { withFileTypes: true });
+		const files = dirents.map((dirent) => {
 			const res = path.resolve(dir, dirent.name);
 		    return dirent.isDirectory() ? this.getFilePaths(res) : res;
-		}));
+		});
 		return files.flat();
 	}
 
@@ -127,8 +127,8 @@ class TestValidator {
 		return parsed;
 	}
 
-	async parseActionScriptTests() {
-	    const filePaths = await this.getFilePaths(
+	parseActionScriptTests() {
+	    const filePaths = this.getFilePaths(
 	    	path.resolve(__dirname, '../action-script-tests')
 	    );
 
@@ -138,7 +138,7 @@ class TestValidator {
 			.map(this.parseActionScriptTestByPath);
 
 		const validator = new Validator();
-		await validator.parseActionScripts();
+		validator.parseActionScripts();
 		this.actionScripts = validator.actionScripts;
 	}
 
