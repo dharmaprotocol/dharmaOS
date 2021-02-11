@@ -1,0 +1,18 @@
+name: TRANSFER_ERC20
+blockNumber: 11837691
+tests:
+  - name: Transfer tokens
+    success: true
+    variables:
+      token: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      to: "0x7e4A8391C728fEd9069B2962699AB416628B19Fa"
+      amount: "1000000000000000000"
+    results:
+      success: true
+    events:
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          to: "0x7e4A8391C728fEd9069B2962699AB416628B19Fa"
+          value: "1000000000000000000"
