@@ -72,10 +72,12 @@ const createSinglePassingTestAndWrite = async (category, actionScriptName, varia
 
 const main = async () => {
     await createSinglePassingTestAndWrite(
-        "weth",
-        "WRAP_ETHER",
+        "compound",
+        "DEPOSIT_TO_COMPOUND",
         {
-            amount: ethers.utils.parseEther("1").toString(),
+            suppliedTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            suppliedAmount: "1000000000",
+            cTokenAddress: "0x39AA39c021dfbaE8faC545936693aC917d5E7563",
         },
     );
 }

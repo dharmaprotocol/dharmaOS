@@ -438,7 +438,7 @@ class Encoder {
 
                     this.targetContracts[name] = {
                         address,
-                        abi: ERC20_ABI,
+                        abi: ERC20_ABI.slice(),
                         namedFunctions: {},
                     };
 
