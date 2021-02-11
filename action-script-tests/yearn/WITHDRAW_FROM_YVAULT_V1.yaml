@@ -1,0 +1,24 @@
+name: WITHDRAW_FROM_YVAULT_V1
+blockNumber: 11838214
+tests:
+  - name: Redeem yTokens using yearn V1, receiving underlying tokens
+    success: true
+    variables:
+      yVaultAddress: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
+      yVaultAmount: "1000000000000000000"
+      receivedTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+    results:
+      receivedAmount: "1111437543861167624"
+    events:
+      - address: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
+        name: Transfer
+        args:
+          from: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          to: "0x0000000000000000000000000000000000000000"
+          value: "1000000000000000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
+          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          value: "1111437543861167624"
