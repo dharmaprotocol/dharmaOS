@@ -257,8 +257,19 @@ const getInputs = async () => {
             },
         ];
 
-        const variableValue = await inquirer.prompt(variableChoice);
-        variables[variableName] = variableValue[variableName];
+        let variableValue = (await inquirer.prompt(variableChoice))[variableName];
+
+        if (variableType === 'bool') {
+            const truePossibilities = new Set([
+                "true", "yes", "t", "y", "1", "0x1", "0x01", "0x" + "1".padStart(64, "0"),
+            ]);
+            variableValue = (
+                variableValue === true ||
+                truePossibilities.has(variableValue.toLowerCase())
+            );
+        }
+
+        variables[variableName] = variableValue;
     }
 
     return {

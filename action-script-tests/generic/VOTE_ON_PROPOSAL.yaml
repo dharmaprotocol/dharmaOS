@@ -1,0 +1,19 @@
+name: VOTE_ON_PROPOSAL
+blockNumber: 11838664
+tests:
+  - name: Vote on active governance proposals for supported protocols
+    success: true
+    variables:
+      protocol: "0xc0dA01a04C3f3E0be433606045bB7017A7323E38"
+      proposal: "38"
+      support: false
+    results:
+      votingWeight: "1" # Note: this needs to be fixed once structs are supported
+    events:
+      - address: "0xc0dA01a04C3f3E0be433606045bB7017A7323E38"
+        name: VoteCast
+        args:
+          voter: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          proposalId: "38"
+          support: false
+          votes: "0"
