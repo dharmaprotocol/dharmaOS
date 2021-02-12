@@ -1,4 +1,4 @@
-const { Validator } = require("./Validator");
+const { Validator } = require("./validator");
 
 const validateAndBuild = async () => {
     const all = await Validator.call();

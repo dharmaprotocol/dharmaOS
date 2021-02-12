@@ -3,8 +3,8 @@ const path = require("path");
 const ethers = require("hardhat").ethers;
 const YAML = require("yaml");
 const inquirer = require("inquirer");
-const { Validator } = require("./Validator");
-const { TestValidator } = require("./TestValidator");
+const { Validator } = require("./validator");
+const { TestValidator } = require("./test-validator");
 const { evaluate } = require("./evaluate");
 
 const generateSinglePassingTest = async (

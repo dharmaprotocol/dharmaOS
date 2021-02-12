@@ -1,4 +1,4 @@
-const { TestValidator } = require("./TestValidator");
+const { TestValidator } = require("./test-validator");
 
 const validateTests = async () => {
     const scenarios = TestValidator.call();

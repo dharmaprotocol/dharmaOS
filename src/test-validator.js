@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const YAML = require("yaml");
 const sha3 = require("js-sha3");
-const { Validator } = require("./Validator");
+const { Validator } = require("./validator");
 
 class TestValidator {
     static call() {

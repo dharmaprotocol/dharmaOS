@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 const ethers = hre.ethers;
-const { Validator } = require("./Validator.js");
+const { Validator } = require("./validator.js");
 
 class ResultsParser {
     constructor(args) {

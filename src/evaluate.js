@@ -3,8 +3,8 @@ const path = require("path");
 const hre = require("hardhat");
 const ethers = hre.ethers;
 const axios = require("axios");
-const { Validator } = require("./Validator");
-const { Encoder } = require("./Encoder");
+const { Validator } = require("./validator");
+const { Encoder } = require("./encoder");
 const { ResultsParser } = require("./results-parser");
 
 const ERC20_ABI = [
