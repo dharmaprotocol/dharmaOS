@@ -20,32 +20,32 @@ tests:
       - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
         name: Approval
         args:
-          owner: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          owner: "wallet"
           spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
           value: "1000000000000000000"
       - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
         name: Approval
         args:
-          owner: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          owner: "wallet"
           spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
           value: "1000000"
       - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
         name: Transfer
         args:
-          from: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          from: "wallet"
           to: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
           value: "1000000000000000000"
       - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
         name: Transfer
         args:
-          from: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          from: "wallet"
           to: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
           value: "996567"
       - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
         name: Transfer
         args:
           from: "0x0000000000000000000000000000000000000000"
-          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          to: "wallet"
           value: "911552122392"
       - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
         name: Sync

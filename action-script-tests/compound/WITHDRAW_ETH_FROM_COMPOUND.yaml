@@ -11,14 +11,14 @@ tests:
       - address: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"
         name: Approval
         args:
-          owner: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          owner: "wallet"
           spender: "0x27D9E416aE2cC789b1b63Ed5bF0d1A71E329ab1c"
           value: "5000000000"
       - address: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B"
         name: DistributedSupplierComp
         args:
           cToken: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"
-          supplier: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          supplier: "wallet"
           compDelta: "8074061405"
           compSupplyIndex: "1449567305063078063323957874481733987031579"
       - address: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B"
@@ -31,7 +31,7 @@ tests:
       - address: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"
         name: Transfer
         args:
-          from: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          from: "wallet"
           to: "0x27D9E416aE2cC789b1b63Ed5bF0d1A71E329ab1c"
           value: "5000000000"
       - address: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"

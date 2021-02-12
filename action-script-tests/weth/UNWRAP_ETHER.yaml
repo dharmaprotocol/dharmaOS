@@ -10,13 +10,13 @@ tests:
       - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
         name: Approval
         args:
-          owner: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          owner: "wallet"
           spender: "0xc193Bb0a80e2e71CC9E1276F5Eecb44b22AeEF75"
           value: "1000000000000000000"
       - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
         name: Transfer
         args:
-          from: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          from: "wallet"
           to: "0xc193Bb0a80e2e71CC9E1276F5Eecb44b22AeEF75"
           value: "1000000000000000000"
       - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"

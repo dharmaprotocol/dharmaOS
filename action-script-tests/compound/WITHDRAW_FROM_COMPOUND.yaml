@@ -21,24 +21,24 @@ tests:
         name: DistributedSupplierComp
         args:
           cToken: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
-          supplier: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          supplier: "wallet"
           compDelta: "39324508"
           compSupplyIndex: "42954503291697505946562214871982915621622"
       - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
         name: Transfer
         args:
           from: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
-          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          to: "wallet"
           value: "1053645227412407349"
       - address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
         name: Transfer
         args:
-          from: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          from: "wallet"
           to: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
           value: "5000000000"
       - address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
         name: Redeem
         args:
-          redeemer: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          redeemer: "wallet"
           redeemAmount: "1053645227412407349"
           redeemTokens: "5000000000"

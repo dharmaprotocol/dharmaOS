@@ -640,6 +640,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
         events,
         parsedReturnData,
         revertReason,
+        wallet: wallet.address,
     };
 }
 

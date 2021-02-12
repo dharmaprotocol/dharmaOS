@@ -18,18 +18,18 @@ tests:
         name: DistributedSupplierComp
         args:
           cToken: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"
-          supplier: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          supplier: "wallet"
           compDelta: "0"
           compSupplyIndex: "1442695140519487229184787997665195580541486"
       - address: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"
         name: Mint
         args:
-          minter: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          minter: "wallet"
           mintAmount: "1000000000000000000"
           mintTokens: "4991591230"
       - address: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"
         name: Transfer
         args:
           from: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5"
-          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          to: "wallet"
           value: "4991591230"

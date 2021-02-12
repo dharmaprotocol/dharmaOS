@@ -6,6 +6,7 @@ const testScenario = async (scenario) => {
     let evaluatedSuccess;
     let evaluatedResults;
     let evaluatedEvents;
+    let wallet;
 
     const {
         actionScriptName,
@@ -30,6 +31,7 @@ const testScenario = async (scenario) => {
             evaluatedSuccess = data.success;
             evaluatedResults = data.results;
             evaluatedEvents = data.events;
+            wallet = data.wallet;
         });
 
         it(`expect success to be ${expectedSuccess}`, async function () {
@@ -68,15 +70,20 @@ const testScenario = async (scenario) => {
                 expect(evaluatedName).to.equal(expectedName);
             });
 
-            for (const [expectedArgName, expectedArgValue] of Object.entries(
+            for (let [expectedArgName, expectedArgValue] of Object.entries(
                 expectedArgs
             )) {
                 it(`expect event arg ${expectedArgName} to be ${expectedArgValue}`, async function () {
                     const { args: evaluatedArgs } = evaluatedEvents[i];
-
-                    expect(evaluatedArgs[expectedArgName]).to.equal(
-                        expectedArgValue
-                    );
+                    if (evaluatedArgs[expectedArgName] === wallet) {
+                        expect("wallet").to.equal(
+                            expectedArgValue
+                        );
+                    } else {
+                        expect(evaluatedArgs[expectedArgName]).to.equal(
+                            expectedArgValue
+                        );
+                    }
                 });
             }
         }

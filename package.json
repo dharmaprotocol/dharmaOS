@@ -1,6 +1,6 @@
 {
   "name": "action-scripts",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A collection of \"Action Scripts\" for execution via the Dharma Smart Wallet.",
   "main": "index.js",
   "repository": "https://github.com/dharmaprotocol/action-scripts",

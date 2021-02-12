@@ -18,13 +18,13 @@ tests:
       - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
         name: Approval
         args:
-          owner: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          owner: "wallet"
           spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
           value: "100000000"
       - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
         name: Transfer
         args:
-          from: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          from: "wallet"
           to: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
           value: "100000000"
       - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
@@ -37,13 +37,13 @@ tests:
         name: Transfer
         args:
           from: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
-          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          to: "wallet"
           value: "109523179814063"
       - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
         name: Transfer
         args:
           from: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
-          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          to: "wallet"
           value: "109"
       - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
         name: Sync
@@ -56,4 +56,4 @@ tests:
           sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
           amount0: "109523179814063"
           amount1: "109"
-          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          to: "wallet"

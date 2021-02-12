@@ -13,7 +13,7 @@ tests:
       - address: "0xc0dA01a04C3f3E0be433606045bB7017A7323E38"
         name: VoteCast
         args:
-          voter: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          voter: "wallet"
           proposalId: "38"
           support: false
           votes: "0"

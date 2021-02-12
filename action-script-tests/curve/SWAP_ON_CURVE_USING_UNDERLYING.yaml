@@ -17,7 +17,7 @@ tests:
       - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
         name: Approval
         args:
-          owner: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          owner: "wallet"
           spender: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
           value: "1000000000000000000"
       - address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
@@ -36,7 +36,7 @@ tests:
       - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
         name: Transfer
         args:
-          from: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          from: "wallet"
           to: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
           value: "1000000000000000000"
       - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
@@ -105,12 +105,12 @@ tests:
         name: Transfer
         args:
           from: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
-          to: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          to: "wallet"
           value: "1000904"
       - address: "0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56"
         name: TokenExchangeUnderlying
         args:
-          buyer: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          buyer: "wallet"
           sold_id: "0"
           tokens_sold: "1000000000000000000"
           bought_id: "1"

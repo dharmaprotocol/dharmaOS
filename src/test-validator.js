@@ -294,7 +294,7 @@ class TestValidator {
 
                 for (const [argName, argValue] of Object.entries(event.args)) {
                     // TODO: import contract ABI from file and use to validate
-                    // event argument types
+                    // event argument types... note special case of "wallet"
                 }
             }
         }

@@ -40,6 +40,15 @@ const generateSinglePassingTest = async (
         process.exit(1);
     }
 
+    for (const [i, {args}] of Object.entries(events)) {
+        for (const [argName, argValue] of Object.entries(args)) {
+            if (argValue == variables.wallet) {
+                console.log(argValue, variables.wallet, argValue === variables.wallet)
+                events[i].args[argName] = "wallet";
+            }
+        }
+    }
+
     delete variables.wallet;
 
     return YAML.stringify({
