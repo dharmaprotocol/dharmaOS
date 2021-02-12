@@ -21,6 +21,15 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: yarn install --frozen-lockfile
-    - run: yarn build
-    - run: yarn test
+    - name: Install
+      run: yarn install --frozen-lockfile
+    - name: Build and validate
+      run: yarn build
+      env:
+        WEB3_PROVIDER_URL: ${{ secrets.WEB3_PROVIDER_URL }}
+        ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+    - name: Run tests
+      run: yarn test
+      env:
+        WEB3_PROVIDER_URL: ${{ secrets.WEB3_PROVIDER_URL }}
+        ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
