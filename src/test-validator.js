@@ -163,8 +163,7 @@ class TestValidator {
         );
         for (let scriptName of actionScriptNames) {
             if (!actionScriptTestNames.has(scriptName)) {
-                // TODO: implement all the tests and then uncomment!!!
-                //throw new Error(`No test found for action script ${scriptName}`);
+                throw new Error(`No test found for action script ${scriptName}`);
             }
         }
 

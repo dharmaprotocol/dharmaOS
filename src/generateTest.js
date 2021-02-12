@@ -123,6 +123,15 @@ const getInputs = async () => {
         (name) => !actionScriptTestNames.has(name)
     );
 
+    if (actionScriptNameChoices.length === 0) {
+        console.log(
+            `All ${actionScriptNames.length} action scripts already have at least one test!\n\n`,
+            `Add more tests to existing action scripts by editing the respective test file directly,`,
+            `or move over untested action scripts from the draft-action-scripts directory.`
+        );
+        process.exit(0);
+    }
+
     const actionScriptNameChoice = await inquirer.prompt([
         {
             type: "list",
