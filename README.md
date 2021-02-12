@@ -14,6 +14,13 @@ $ yarn install
 $ yarn build
 $ yarn test
 ```
+3. author an action script and place it in a project-specific directory in `action-scripts`, then run `yarn build` again and correct any issues that are surfaced
+
+4. create a test / tests for the action script, either:
+- manually via a testfile in `action-script-tests` with the same name / subdirectory as the action script being tested
+- automatically via `yarn generate`, which takes you through an interactive prompt where you'll be able to choose the action script and fill out all the input variables
+
+5. ensure that the new test(s) are passing via `yarn test` and submit a PR!
 
 ## Specification
 The Primary action script format is a human-readable YAML file — this is convertible to and from a machine-readable JSON file that will be what is stored in the database and used to compile payloads.
