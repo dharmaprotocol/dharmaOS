@@ -18,12 +18,14 @@ const testScenario = async (scenario) => {
     } = scenario;
 
     describe(`${actionScriptName}: ${testName}`, function () {
+        console.log(` > ${actionScriptName}: ${testName}`);
         before(async function () {
             const data = await evaluate(
                 actionScriptName,
                 variables,
                 blockNumber
             );
+            console.log(` ---> ${actionScriptName}: ${!!data.success ? 'ready' : 'FAILED'}`)
 
             evaluatedSuccess = data.success;
             evaluatedResults = data.results;
