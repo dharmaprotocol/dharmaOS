@@ -134,3 +134,21 @@ description: "Mint ${yVaultReceivedAmount:yVAULT.decimals} ${yVAULT.symbol} usin
    "description": "Mint ${yVaultReceivedAmount:yVAULT.decimals} ${yVAULT.symbol} using ${suppliedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol}"
 }
 ```
+
+
+## Notes
+
+To set an action script and variables ahead of time when setting up testing for a new action script (i.e. to skip the "prompt" portion of `yarn generate`), create a `test-generation-config.js` file. Example formatting:
+
+```js
+module.exports = {
+  actionScriptName: "SWAP_ON_BALANCER_VIA_EXCHANGE_PROXY",
+  variables: {
+    soldTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    boughtTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    soldTokenAmount: "10000000000000000000",
+    minimumBoughtTokenAmount: "9000000",
+    maximumNumberOfPools: "3",
+  }
+};
+```

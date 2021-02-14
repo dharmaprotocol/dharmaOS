@@ -1,0 +1,36 @@
+name: "SWAP_ON_BALANCER_VIA_EXCHANGE_PROXY"
+
+summary: "Swap on Balancer"
+
+variables:
+  soldTokenAddress: address
+  boughtTokenAddress: address
+  soldTokenAmount: uint256
+  minimumBoughtTokenAmount: uint256
+  maximumNumberOfPools: uint256
+
+results:
+  boughtTokenAmount: uint256
+
+definitions:
+ - Token SOLD soldTokenAddress
+ - Token BOUGHT boughtTokenAddress
+ - Contract BALANCER_EXCHANGE_PROXY 0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21
+ - Function swap BALANCER_EXCHANGE_PROXY smartSwapExactIn(address,address,uint256,uint256,uint256) => uint256
+
+inputs:
+ - SOLD: soldTokenAmount
+
+actions:
+ - SOLD approve BALANCER_EXCHANGE_PROXY soldTokenAmount
+ - BALANCER_EXCHANGE_PROXY swap soldTokenAddress boughtTokenAddress soldTokenAmount minimumBoughtTokenAmount maximumNumberOfPools => boughtTokenAmount
+
+operations:
+
+outputs:
+ - BOUGHT: boughtTokenAmount
+
+associations:
+ - BOUGHT: minimumBoughtTokenAmount
+
+description: "Swap ${soldTokenAmount:SOLD.decimals} ${SOLD.symbol} for ${boughtTokenAmount:BOUGHT.decimals} ${BOUGHT.symbol} on Balancer"
