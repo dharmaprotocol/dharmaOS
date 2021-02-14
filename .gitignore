@@ -14,3 +14,4 @@ dump.rdb
 .env*
 redis.conf
 report.*
+test-generation-config.js

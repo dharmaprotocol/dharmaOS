@@ -283,6 +283,7 @@ const getABI = async (account) => {
     try {
         abi = fs.readFileSync(contractABIPath, "utf8");
     } catch (error) {
+        console.log(`no ABI found for account "${account}", retrieving... (${error.message})`)
         const data = await get("https://api.etherscan.io/api", {
             params: {
                 module: "contract",
@@ -311,8 +312,102 @@ const getABI = async (account) => {
         });
     }
 
+    try {
+        if (typeof abi !== 'object') {
+            abi = JSON.parse(abi);
+        }
+    } catch (error) {
+        throw new Error(
+            `Could not parse ABI found for account "${account}": ${error.message})`
+        );
+    }
+
     return abi;
 };
+
+function parseLogIncludingAnonymous(log, abi) {
+    let event;
+    try {
+        const contractInterface = new ethers.utils.Interface(
+            abi
+        );
+        event = contractInterface.parseLog(log);
+    } catch (error) {
+        const anonymousEvents = abi
+            .filter(x => x.type === 'event' && !!x.anonymous);
+
+        let located = false;
+        for (const {name, inputs} of anonymousEvents) {
+            const taggedInputs = inputs.map((input, i) => ({i, ...input}));
+            const indexedInputs = taggedInputs.filter(input => !!input.indexed)
+            if (indexedInputs.length === log.topics.length) {
+                try {
+                    // decode data using unindexed inputs
+                    const unindexedInputs = taggedInputs
+                        .filter(input => !input.indexed);
+                    const decodedDataValues = ethers.utils.defaultAbiCoder.decode(
+                        unindexedInputs.map(input => input.type), log.data
+                    );
+
+                    const unindexedInputsWithValues = [];
+                    for (const [i, unindexedInput] of Object.entries(unindexedInputs)) {
+                        const decodedData = {
+                            ...unindexedInput,
+                            value: decodedDataValues[i],
+                        }
+
+                        unindexedInputsWithValues.push(decodedData);
+                    }
+
+                    // decode each indexed input (use bytes32 for dynamic types)
+                    const indexedInputsWithValues = [];
+                    for (const [i, indexedInput] of Object.entries(indexedInputs)) {
+                        const topic = log.topics[i];
+
+                        // TODO: all dynamically-sized types should be cast to bytes32
+                        const decodedTopicValue = ethers.utils.defaultAbiCoder.decode(
+                            [indexedInput.type], topic
+                        )[0];
+
+                        const decodedTopic = {
+                            ...indexedInput,
+                            value: decodedTopicValue,
+                        }
+
+                        indexedInputsWithValues.push(decodedTopic);
+                    }
+
+                    // order based on the inputs
+                    const inputsWithValues = indexedInputsWithValues
+                        .concat(unindexedInputsWithValues)
+                        .sort((a, b) => a.i - b.i)
+                        .map(input => [input.name, input.value]);
+
+                    // add index access and set final event
+                    event = {
+                        name,
+                        args: {
+                            ...Object.fromEntries(Array(inputsWithValues.length).fill().map((_, i) => [i, inputsWithValues[i][1]])),
+                            ...Object.fromEntries(inputsWithValues),
+                        }
+                    }
+
+                    // Note: there might be other anonymous events that
+                    // could be decoded — may want to check each of them.
+                    located = true;
+                    break;
+
+                } catch (decodeError) { }
+            }
+        }
+
+        if (!located) {
+            throw new Error(error);
+        }
+    }
+
+    return event;
+}
 
 async function evaluate(actionScriptName, variables, blockNumber) {
     await hre.network.provider.request({
@@ -567,10 +662,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                     try {
                         // Then try parsing via the contract ABI from Etherscan
                         const abi = await getABI(log.address);
-                        const contractInterface = new ethers.utils.Interface(
-                            abi
-                        );
-                        currentEvent = contractInterface.parseLog(log);
+                        currentEvent = await parseLogIncludingAnonymous(log, abi);
                     } catch (error) {
                         try {
                             // Last-ditch attempt: look for a proxy contract ABI
@@ -583,18 +675,22 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                                 .split("\n")
                                 .filter((line) => line.includes(search))
                                 .pop();
-                            const proxyAddress = relevantLine
-                                .match(/<a href='\/address\/(.*?)#code'>/g)[0]
-                                .slice(18, -7);
+                            if (!!relevantLine) {
+                                const proxyAddress = relevantLine
+                                    .match(/<a href='\/address\/(.*?)#code'>/g)[0]
+                                    .slice(18, -7);
 
-                            const proxy = ethers.utils.getAddress(proxyAddress);
-                            const abi = await getABI(proxy);
-                            const contractInterface = new ethers.utils.Interface(
-                                abi
-                            );
-                            currentEvent = contractInterface.parseLog(log);
+                                const proxy = ethers.utils.getAddress(proxyAddress);
+                                const proxyABI = await getABI(proxy);
+                                currentEvent = await parseLogIncludingAnonymous(log, proxyABI);
+                            } else {
+                                console.error(
+                                    "ERROR: could not retrieve the contract ABI! Try setting the file manually."
+                                );
+                                process.exit(1);
+                            }
                         } catch (error) {
-                            console.error("ERROR", error.message);
+                            console.error("ERROR:", error.message);
                             process.exit(1);
                         }
                     }

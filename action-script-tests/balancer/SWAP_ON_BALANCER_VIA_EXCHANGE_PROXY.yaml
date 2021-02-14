@@ -1,0 +1,140 @@
+name: SWAP_ON_BALANCER_VIA_EXCHANGE_PROXY
+blockNumber: 11853636
+tests:
+  - name: Swap on Balancer
+    success: true
+    variables:
+      soldTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      boughtTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+      soldTokenAmount: "10000000000000000000"
+      minimumBoughtTokenAmount: "9000000"
+      maximumNumberOfPools: "3"
+    results:
+      boughtTokenAmount: "9903318"
+    events:
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          value: "10000000000000000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          value: "10000000000000000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Approval
+        args:
+          owner: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          spender: "0x9B208194Acc0a8cCB2A8dcafEACfbB7dCc093F81"
+          value: "7572225499651745113"
+      - address: "0x9B208194Acc0a8cCB2A8dcafEACfbB7dCc093F81"
+        name: LOG_CALL
+        args:
+          sig: "0x8201aa3f"
+          caller: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          data: "0x8201aa3f0000000000000000000000006b175474e89094c44da98b954eedeac495271d\
+            0f0000000000000000000000000000000000000000000000006915f2f8f9e5a5590\
+            00000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000\
+            000000000000000000000000000000000000000000000000000000000000fffffff\
+            fffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      - address: "0x9B208194Acc0a8cCB2A8dcafEACfbB7dCc093F81"
+        name: LOG_SWAP
+        args:
+          caller: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          tokenIn: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+          tokenOut: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+          tokenAmountIn: "7572225499651745113"
+          tokenAmountOut: "7531324"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          to: "0x9B208194Acc0a8cCB2A8dcafEACfbB7dCc093F81"
+          value: "7572225499651745113"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0x9B208194Acc0a8cCB2A8dcafEACfbB7dCc093F81"
+          to: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          value: "7531324"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Approval
+        args:
+          owner: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          spender: "0x1B8874BaceAAfba9eA194a625d12E8b270D77016"
+          value: "1683863580011990099"
+      - address: "0x1B8874BaceAAfba9eA194a625d12E8b270D77016"
+        name: LOG_CALL
+        args:
+          sig: "0x8201aa3f"
+          caller: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          data: "0x8201aa3f0000000000000000000000006b175474e89094c44da98b954eedeac495271d\
+            0f000000000000000000000000000000000000000000000000175e490128d50c530\
+            00000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000\
+            000000000000000000000000000000000000000000000000000000000000fffffff\
+            fffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      - address: "0x1B8874BaceAAfba9eA194a625d12E8b270D77016"
+        name: LOG_SWAP
+        args:
+          caller: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          tokenIn: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+          tokenOut: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+          tokenAmountIn: "1683863580011990099"
+          tokenAmountOut: "1628567"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          to: "0x1B8874BaceAAfba9eA194a625d12E8b270D77016"
+          value: "1683863580011990099"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0x1B8874BaceAAfba9eA194a625d12E8b270D77016"
+          to: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          value: "1628567"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Approval
+        args:
+          owner: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          spender: "0x57755F7DeC33320BcA83159C26E93751bFd30fbE"
+          value: "743910920336264788"
+      - address: "0x57755F7DeC33320BcA83159C26E93751bFd30fbE"
+        name: LOG_CALL
+        args:
+          sig: "0x8201aa3f"
+          caller: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          data: "0x8201aa3f0000000000000000000000006b175474e89094c44da98b954eedeac495271d\
+            0f0000000000000000000000000000000000000000000000000a52e70a672d4e540\
+            00000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000\
+            000000000000000000000000000000000000000000000000000000000000fffffff\
+            fffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      - address: "0x57755F7DeC33320BcA83159C26E93751bFd30fbE"
+        name: LOG_SWAP
+        args:
+          caller: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          tokenIn: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+          tokenOut: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+          tokenAmountIn: "743910920336264788"
+          tokenAmountOut: "743427"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          to: "0x57755F7DeC33320BcA83159C26E93751bFd30fbE"
+          value: "743910920336264788"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0x57755F7DeC33320BcA83159C26E93751bFd30fbE"
+          to: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          value: "743427"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+          to: wallet
+          value: "9903318"

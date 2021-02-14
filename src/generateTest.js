@@ -119,36 +119,64 @@ const getInputs = async () => {
         testValidator.actionScriptTests.map((test) => test.name)
     );
 
-    const actionScriptNameChoices = actionScriptNames.filter(
-        (name) => !actionScriptTestNames.has(name)
-    );
+    let testGenerationConfig;
+    let actionScriptName;
+    let variables = {};
+    try {
+        testGenerationConfig = require('../test-generation-config');
+        if (!('actionScriptName') in testGenerationConfig) {
+            console.error('Error: found test-generation-config.js but no "actionScriptName" property was located.');
+            process.exit(1);
+        }
 
-    if (actionScriptNameChoices.length === 0) {
-        console.log(
-            `All ${actionScriptNames.length} action scripts already have at least one test!\n\n`,
-            `Add more tests to existing action scripts by editing the respective test file directly,`,
-            `or move over untested action scripts from the draft-action-scripts directory.`
+        actionScriptName = testGenerationConfig.actionScriptName;
+
+        if (!((new Set(actionScriptNames)).has(actionScriptName))) {
+            console.error(`Error: found test-generation-config.js but no matching action script named "${actionScriptName}" was located.`);
+            process.exit(1);
+        }
+
+        if (!!testGenerationConfig.variables) {
+            variables = testGenerationConfig.variables;
+        }
+
+        console.log(`Located test-generation-config.js — generating test for ${actionScriptName}.`);
+    } catch (error) {
+        const actionScriptNameChoices = actionScriptNames.filter(
+            (name) => !actionScriptTestNames.has(name)
         );
-        process.exit(0);
+
+        if (actionScriptNameChoices.length === 0) {
+            console.log(
+                `All ${actionScriptNames.length} action scripts already have at least one test!\n\n`,
+                `Add more tests to existing action scripts by editing the respective test file directly,`,
+                `or move over untested action scripts from the draft-action-scripts directory.`
+            );
+            process.exit(0);
+        }
+
+        const actionScriptNameChoice = await inquirer.prompt([
+            {
+                type: "list",
+                name: "actionScriptName",
+                message: "Select an action script without existing tests:",
+                choices: actionScriptNameChoices,
+            },
+        ]);
+
+        actionScriptName = actionScriptNameChoice.actionScriptName;
     }
 
-    const actionScriptNameChoice = await inquirer.prompt([
-        {
-            type: "list",
-            name: "actionScriptName",
-            message: "Select an action script without existing tests:",
-            choices: actionScriptNameChoices,
-        },
-    ]);
-
-    const actionScriptName = actionScriptNameChoice.actionScriptName;
     const actionScriptIndex = actionScriptNames.indexOf(actionScriptName);
     const actionScriptCategory =
         validator.actionScriptCategories[actionScriptIndex];
     const actionScript = validator.actionScripts[actionScriptIndex];
 
-    const variables = {};
-    const remainingVariables = { ...actionScript.variables };
+    const remainingVariables = Object.fromEntries(
+        Object.entries(actionScript.variables)
+            .filter(([variableName, variableType]) => !(variableName in variables))
+    );
+
     while (Object.keys(remainingVariables).length > 0) {
         const variablesAndLabels = Object.entries(
             remainingVariables
