@@ -1,0 +1,41 @@
+name: "ADD_LIQUIDITY_TO_UNISWAP_V2_WITH_ETH_USING_ROUTER"
+
+summary: "Add liquidity to Uniswap pairs, supplying a token and Ether for a pair and minting LP tokens"
+
+variables:
+  tokenAddress: address
+  tokensDesired: uint256
+  etherDesired: uint256
+  tokensMin: uint256
+  etherMin: uint256
+  liquidityTokenAddress: address
+
+inputs:
+  - TOKEN: tokensDesired
+  - ETHER: etherDesired
+
+definitions:
+ - Token TOKEN tokenAddress
+ - Token LIQUIDITY_TOKEN liquidityTokenAddress
+ - Contract UNISWAP_ROUTER 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
+ - Function addLiquidity UNISWAP_ROUTER addLiquidityETH(address,uint256,uint256,uint256,address,uint256):payable => uint256 uint256 uint256
+
+actions:
+ - TOKEN approve UNISWAP_ROUTER tokensDesired
+ - UNISWAP_ROUTER addLiquidity:etherDesired tokenAddress tokensDesired tokensMin etherMin wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => suppliedTokens suppliedEther receivedLiquidityAmount
+
+results:
+  receivedLiquidityAmount: uint256
+  suppliedTokens: uint256
+  suppliedEther: uint256
+
+outputs:
+ - LIQUIDITY_TOKEN: receivedLiquidityAmount
+
+associations:
+  - TOKEN: tokensMin
+  - ETHER: etherMin
+  - TOKEN: suppliedTokens
+  - ETHER: suppliedEther
+
+description: "Mint ${receivedLiquidityAmount:18.decimals} Uniswap V2 ${TOKEN.symbol}-ETH LP tokens by supplying ${suppliedTokens:TOKEN.decimals} ${TOKEN.symbol} and ${suppliedEther:ETHER.decimals} Ether."
