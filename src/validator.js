@@ -15,7 +15,11 @@ class Validator {
     static async getActionScript(name) {
         const validator = new Validator();
         await validator.parseActionScripts();
-        const actionScriptOptions = validator.actionScripts.filter(
+        return validator.getActionScriptAfterParsing(name);
+    }
+
+    getActionScriptAfterParsing(name) {
+        const actionScriptOptions = this.actionScripts.filter(
             (script) => script.name === name
         );
         if (actionScriptOptions.length === 0) {
@@ -70,6 +74,12 @@ class Validator {
         outputs: "array",
         associations: "array",
         description: "string",
+    };
+
+    static CONDITIONAL_FIELDS_AND_TYPES = {
+        condition: "string",
+        then: "array",
+        else: "array",
     };
 
     // Note: name, summary, actions and description are all required!
@@ -160,8 +170,8 @@ class Validator {
 
     validateActionScripts() {
         const names = this.actionScripts.map((script) => script.name);
-        const namesSet = new Set(names);
-        if (namesSet.size !== names.length) {
+        this.namesSet = new Set(names);
+        if (this.namesSet.size !== names.length) {
             throw new Error("All action scripts must have a unique name");
         }
 
@@ -235,7 +245,7 @@ class Validator {
         }
 
         Validator.validateVariablesAndResults(actionScript);
-        Validator.validateDefinitions(actionScript);
+        this.validateDefinitions(actionScript);
         Validator.validateActions(actionScript);
         Validator.validateInputs(actionScript);
         Validator.validateOutputs(actionScript);
@@ -275,25 +285,35 @@ class Validator {
         }
     }
 
-    static validateDefinitions(actionScript) {
+    validateDefinitions(actionScript) {
         const { name, variables, definitions } = actionScript;
         const declaredDefinitions = new Set();
         const declaredContractsAndTokens = new Set();
+        const declaredActions = new Set();
         for (let [i, definition] of Object.entries(definitions)) {
             if (
                 !(
                     Validator.TYPE_CHECKERS.string(definition) &&
                     (definition.startsWith("Token ") ||
                         definition.startsWith("Contract ") ||
-                        definition.startsWith("Function "))
+                        definition.startsWith("Function ") ||
+                        definition.startsWith("Action "))
                 )
             ) {
                 throw new Error(
                     `Action script "${name}" definition #${
                         parseInt(i) + 1
-                    } does not start with "Token", "Contract", or "Function" keyword`
+                    } does not start with "Token", "Contract", "Function" or "Action" keyword`
                 );
             }
+
+            // TODO: remove once composability support is fully implemented!
+            if (definition.startsWith("Action")) {
+                throw new Error(
+                    `Action script "${name}" contains an "Action" — composability is still under development.`
+                );
+            }
+
             const splitDefinition = definition.split(" ");
 
             if (splitDefinition.length < 3) {
@@ -358,17 +378,220 @@ class Validator {
 
                 // TODO: get return value types and validate against assigned
                 // result types?
+            } else if (definitionType === "Action") {
+                if (splitDefinition.length < 3) {
+                    throw new Error(
+                        `Action script "${name}" Action definition "${definitionName}" does not contain exactly two arguments (a name and an action script name)`
+                    );
+                }
+
+                const definitionValue = splitDefinition[2];
+                declaredActions.add(definitionName);
+
+                if (definitionValue === name) {
+                    throw new Error(
+                        `Action script "${name}" ${definitionType} "${definitionName}" of "${definitionValue}" refers to itself`
+                    );
+                }
+
+                if (!this.namesSet.has(definitionValue)) {
+                    throw new Error(
+                        `Action script "${name}" ${definitionType} "${definitionName}" of "${definitionValue}" cannot be located`
+                    );
+                }
+
+                // TODO: ensure that recursive imports are not employed anywhere
             } else {
                 throw new Error(
-                    "Only Token, Contract, and Function definitions are currently supported"
+                    "Only Token, Contract, Function and Action definitions are currently supported"
                 );
             }
         }
     }
 
-    static validateActions(actionScript) {
-        const { name, variables, definitions, actions } = actionScript;
+    static validateAction(action, index, actionScript) {
+        const { name, variables, definitions } = actionScript;
+
+        const {
+            definedTokensAndContracts,
+            definedFunctions,
+            definedActions
+        } = Validator.getDefinedEntities(actionScript);
+
         variables.wallet = "address";
+
+        if (!Validator.TYPE_CHECKERS.string(action)) {
+            throw new Error(
+                `Action script "${name}" action #${
+                    parseInt(index) + 1
+                } is not a string`
+            );
+        }
+
+        const splitAction = action.split(" ");
+        if (splitAction.length < 2) {
+            throw new Error(
+                `Action script "${name}" action #${
+                    parseInt(index) + 1
+                } does not contain enough arguments`
+            );
+        }
+
+        const actionContract = splitAction[0];
+
+        if (actionContract in definedActions) {
+            const targetActionScript = definedActions[actionContract];
+            console.log(targetActionScript);
+            return;
+        }
+
+        let actionFunction = splitAction[1];
+
+        if (actionContract === "ETHER") {
+            if (
+                !actionFunction.includes(":") &&
+                actionFunction.split(":").length !== 2
+            ) {
+                throw new Error(
+                    `Action script "${name}" action #${
+                        parseInt(i) + 1
+                    } (ETHER) requires a to:amount argument`
+                );
+            }
+            const [to, amount] = actionFunction.split(":");
+
+            if (to in variables) {
+                if (variables[to] !== "address") {
+                    throw new Error(
+                        `Action script "${name}" ETHER recipient variable "${to}" is not type "address"`
+                    );
+                }
+            } else {
+                Validator.ensureValidChecksum(to);
+            }
+
+            if (amount in variables) {
+                if (!variables[amount].startsWith("uint")) {
+                    throw new Error(
+                        `Action script "${name}" ETHER payment amount variable "${amount}" is not type "uintXXX"`
+                    );
+                }
+            } else {
+                // TODO: ensure valid number
+            }
+
+            return;
+        }
+
+        if (!definedTokensAndContracts.has(actionContract)) {
+            throw new Error(
+                `Action script "${name}" action #${
+                    parseInt(index) + 1
+                } refers to undeclared Contract or Token "${actionContract}"`
+            );
+        }
+
+        // Note: payable checks are performed as part of input validation
+        if (actionFunction.includes(":")) {
+            actionFunction = actionFunction.split(":")[0];
+        }
+
+        if (!definedFunctions.has(actionFunction)) {
+            throw new Error(
+                `Action script "${name}" action #${
+                    parseInt(i) + 1
+                } refers to undeclared Function "${actionFunction}"`
+            );
+        }
+
+        const givenArguments = action.split(" => ")[0].split(" ").slice(2);
+        let expectedArgumentTypes;
+        if (actionFunction in Validator.ERC20_FUNCTIONS) {
+            expectedArgumentTypes =
+                Validator.ERC20_FUNCTIONS[actionFunction];
+
+            const tokenDefinitionList = definitions
+                .map((definition) => definition.split(" "))
+                .filter((definition) => definition[1] === actionContract);
+
+            if (tokenDefinitionList.length !== 1) {
+                throw new Error(
+                    `A canonical Contract "${actionContract}" for Function "${actionFunction}" could not be located in definitions!`
+                );
+            }
+            const tokenDefinition = tokenDefinitionList.pop();
+
+            if (tokenDefinition[0] !== "Token") {
+                throw new Error(
+                    `Function "${actionFunction}" can only be called on contracts declared as a Token`
+                );
+            }
+        } else {
+            const functionDefinitionList = definitions
+                .filter((definition) =>
+                    definition.startsWith(`Function ${actionFunction} `)
+                )
+                .map((definition) => definition.split(" "));
+
+            if (functionDefinitionList.length !== 1) {
+                throw new Error(
+                    `A canonical Function "${actionFunction}" could not be located in definitions!`
+                );
+            }
+            const functionDefinition = functionDefinitionList.pop();
+            const functionSignature = functionDefinition[3];
+            expectedArgumentTypes = functionSignature
+                .slice(
+                    functionSignature.indexOf("(") + 1,
+                    functionSignature.indexOf(")")
+                )
+                .split(",")
+                .filter((x) => !!x);
+
+            if (functionDefinition[2] !== actionContract) {
+                throw new Error(
+                    `Action script "${name}" action #${
+                        parseInt(i) + 1
+                    } calls Function "${actionFunction}" on Contract or Token "${actionContract}" when it is actually defined for ${
+                        functionDefinition[2]
+                    }`
+                );
+            }
+        }
+
+        if (givenArguments.length !== expectedArgumentTypes.length) {
+            throw new Error(
+                `Function "${actionFunction}" (action #${
+                    parseInt(i) + 1
+                }) gives ${givenArguments.length} arguments and expects ${
+                    expectedArgumentTypes.length
+                }`
+            );
+        }
+
+        for (let [j, givenArgument] of Object.entries(givenArguments)) {
+            const expectedArgumentType = expectedArgumentTypes[j];
+
+            if (givenArgument in variables) {
+                if (variables[givenArgument] !== expectedArgumentType) {
+                    throw new Error(
+                        `Action script "${name}" variable "${givenArgument}" on function ${actionFunction} is not type "${expectedArgumentType}"`
+                    );
+                }
+            } else {
+                if (expectedArgumentType === "address") {
+                    if (!definedTokensAndContracts.has(givenArgument)) {
+                        Validator.ensureValidChecksum(givenArgument);
+                    }
+                } else {
+                    // TODO: validate argument is the expected type
+                }
+            }
+        }
+    }
+
+    static getDefinedEntities(actionScript) {
+        const { definitions } = actionScript;
 
         const definedTokensAndContracts = new Set(
             definitions
@@ -379,6 +602,7 @@ class Validator {
                 )
                 .map((definition) => definition.split(" ")[1])
         );
+
         const definedFunctions = new Set(
             definitions
                 .filter((definition) => definition.startsWith("Function"))
@@ -386,176 +610,104 @@ class Validator {
                 .concat(Object.keys(Validator.ERC20_FUNCTIONS))
         );
 
-        for (let [i, action] of Object.entries(actions)) {
-            if (!Validator.TYPE_CHECKERS.string(action)) {
-                throw new Error(
-                    `Action script "${name}" action #${
-                        parseInt(i) + 1
-                    } is not a string`
-                );
-            }
+        const definedActions = Object.fromEntries(
+            definitions
+                .filter((definition) => definition.startsWith("Action"))
+                .map((definition) => definition.split(" "))
+                .map(splitDefinition => ([splitDefinition[1], splitDefinition[2]]))
+        );
 
-            const splitAction = action.split(" ");
-            if (splitAction.length < 2) {
-                throw new Error(
-                    `Action script "${name}" action #${
-                        parseInt(i) + 1
-                    } does not contain enough arguments`
-                );
-            }
+        return {
+            definedTokensAndContracts,
+            definedFunctions,
+            definedActions,
+        };
+    }
 
-            const actionContract = splitAction[0];
-            let actionFunction = splitAction[1];
+    static validateActions(actionScript) {
+        const { name, actions } = actionScript;
 
-            if (actionContract === "ETHER") {
+        for (let [index, action] of Object.entries(actions)) {
+            if (Validator.TYPE_CHECKERS.object(action)) {
+                // check for conditional
                 if (
-                    !actionFunction.includes(":") &&
-                    actionFunction.split(":").length !== 2
+                    Object.keys(action).length !== 1 ||
+                    Object.keys(action)[0] !== 'if'
                 ) {
                     throw new Error(
-                        `Action script "${name}" action #${
-                            parseInt(i) + 1
-                        } (ETHER) requires a to:amount argument`
+                        `Action script "${name}" action #${parseInt(index) + 1} supplies an object that is not a conditional (key: "if")`
                     );
                 }
-                const [to, amount] = actionFunction.split(":");
 
-                if (to in variables) {
-                    if (variables[to] !== "address") {
+                const conditionalValues = Object.values(action)[0];
+                if (
+                    !Validator.TYPE_CHECKERS.object(conditionalValues)
+                ) {
+                    throw new Error(
+                        `Action script "${name}" action #${parseInt(index) + 1} supplies an object that is not a conditional ("if" value is not an object)`
+                    );
+                }
+
+                const validFields = new Set(
+                    Object.keys(Validator.CONDITIONAL_FIELDS_AND_TYPES)
+                );
+                for (let field of Object.keys(conditionalValues)) {
+                    if (!validFields.has(field)) {
                         throw new Error(
-                            `Action script "${name}" ETHER recipient variable "${to}" is not type "address"`
+                            `Action script "${name}" condition (action #${parseInt(index) + 1}) contains invalid field "${field}"`
                         );
                     }
-                } else {
-                    Validator.ensureValidChecksum(to);
                 }
 
-                if (amount in variables) {
-                    if (!variables[amount].startsWith("uint")) {
+                for (let [field, type] of Object.entries(
+                    Validator.CONDITIONAL_FIELDS_AND_TYPES
+                )) {
+                    if (!(field in conditionalValues)) {
                         throw new Error(
-                            `Action script "${name}" ETHER payment amount variable "${amount}" is not type "uintXXX"`
+                            `Action script "${name}" condition (action #${parseInt(index) + 1}) must contain a "${field}" field`
                         );
                     }
-                } else {
-                    // TODO: ensure valid number
-                }
+                    if (!Validator.TYPE_CHECKERS[type](conditionalValues[field])) {
+                        throw new Error(
+                            `Action script "${name}" condition (action #${parseInt(index) + 1}) field "${field}" must be of type "${type}"`
+                        );
+                    }
 
-                continue;
-            }
+                    if (type === 'array') {
+                        for (let [conditionalActionIndex, conditionalAction] of Object.entries(conditionalValues[field])) {
+                            const splitConditionalAction = conditionalAction.split(" ");
 
-            if (!definedTokensAndContracts.has(actionContract)) {
-                throw new Error(
-                    `Action script "${name}" action #${
-                        parseInt(i) + 1
-                    } refers to undeclared Contract or Token "${actionContract}"`
-                );
-            }
 
-            // Note: payable checks are performed as part of input validation
-            if (actionFunction.includes(":")) {
-                actionFunction = actionFunction.split(":")[0];
-            }
+                            try {
+                                Validator.validateAction(
+                                    conditionalAction,
+                                    conditionalActionIndex,
+                                    actionScript
+                                );
+                            } catch (error) {
+                                throw new Error(
+                                    `Action script "${name}" condition (action #${parseInt(index) + 1}) field "${field}" threw the following error during validation during conditional action #${parseInt(conditionalActionIndex) + 1}: ${error.message}`
+                                );
+                            }
+                        }
 
-            if (!definedFunctions.has(actionFunction)) {
-                throw new Error(
-                    `Action script "${name}" action #${
-                        parseInt(i) + 1
-                    } refers to undeclared Function "${actionFunction}"`
-                );
-            }
-
-            const givenArguments = action.split(" => ")[0].split(" ").slice(2);
-            let expectedArgumentTypes;
-            if (actionFunction in Validator.ERC20_FUNCTIONS) {
-                expectedArgumentTypes =
-                    Validator.ERC20_FUNCTIONS[actionFunction];
-
-                const tokenDefinitionList = definitions
-                    .map((definition) => definition.split(" "))
-                    .filter((definition) => definition[1] === actionContract);
-
-                if (tokenDefinitionList.length !== 1) {
-                    throw new Error(
-                        `A canonical Contract "${actionContract}" for Function "${actionFunction}" could not be located in definitions!`
-                    );
-                }
-                const tokenDefinition = tokenDefinitionList.pop();
-
-                if (tokenDefinition[0] !== "Token") {
-                    throw new Error(
-                        `Function "${actionFunction}" can only be called on contracts declared as a Token`
-                    );
+                    }
                 }
             } else {
-                const functionDefinitionList = definitions
-                    .filter((definition) =>
-                        definition.startsWith(`Function ${actionFunction} `)
-                    )
-                    .map((definition) => definition.split(" "));
-
-                if (functionDefinitionList.length !== 1) {
-                    throw new Error(
-                        `A canonical Function "${actionFunction}" could not be located in definitions!`
-                    );
-                }
-                const functionDefinition = functionDefinitionList.pop();
-                const functionSignature = functionDefinition[3];
-                expectedArgumentTypes = functionSignature
-                    .slice(
-                        functionSignature.indexOf("(") + 1,
-                        functionSignature.indexOf(")")
-                    )
-                    .split(",")
-                    .filter((x) => !!x);
-
-                if (functionDefinition[2] !== actionContract) {
-                    throw new Error(
-                        `Action script "${name}" action #${
-                            parseInt(i) + 1
-                        } calls Function "${actionFunction}" on Contract or Token "${actionContract}" when it is actually defined for ${
-                            functionDefinition[2]
-                        }`
-                    );
-                }
-            }
-
-            if (givenArguments.length !== expectedArgumentTypes.length) {
-                throw new Error(
-                    `Function "${actionFunction}" (action #${
-                        parseInt(i) + 1
-                    }) gives ${givenArguments.length} arguments and expects ${
-                        expectedArgumentTypes.length
-                    }`
+                Validator.validateAction(
+                    action,
+                    index,
+                    actionScript
                 );
-            }
-
-            for (let [j, givenArgument] of Object.entries(givenArguments)) {
-                const expectedArgumentType = expectedArgumentTypes[j];
-
-                if (givenArgument in variables) {
-                    if (variables[givenArgument] !== expectedArgumentType) {
-                        throw new Error(
-                            `Action script "${name}" variable "${givenArgument}" on function ${actionFunction} is not type "${expectedArgumentType}"`
-                        );
-                    }
-                } else {
-                    if (expectedArgumentType === "address") {
-                        if (!definedTokensAndContracts.has(givenArgument)) {
-                            Validator.ensureValidChecksum(givenArgument);
-                        }
-                    } else {
-                        // TODO: validate argument is the expected type
-                    }
-                }
             }
         }
     }
 
-    static validateInputs(actionScript) {
-        const { name, variables, definitions, inputs, actions } = actionScript;
+    static getInputEntities(actionScript) {
+        const { definitions } = actionScript;
 
         const inputFunctions = new Set(["transfer", "approve"]);
-        const payableFuntions = new Set([]);
+        const payableFunctions = new Set([]);
         for (let [i, definition] of Object.entries(definitions)) {
             const splitDefinition = definition.split(" ");
 
@@ -572,12 +724,77 @@ class Validator {
                 }
 
                 if (splitDefinition[3].includes(":payable")) {
-                    payableFuntions.add(functionName);
+                    payableFunctions.add(functionName);
                 }
             }
         }
 
-        const inputTokens = {};
+        return {
+            inputFunctions,
+            payableFunctions,
+        };
+    }
+
+    static validateInput(action, actionScript, inputTokens) {
+        const { name } = actionScript;
+
+        const {
+            inputFunctions,
+            payableFunctions
+        } = Validator.getInputEntities(actionScript);
+
+        const splitAction = action.split(" ");
+        let actionContract = splitAction[0];
+        let actionFunction = splitAction[1];
+        let amountArgument;
+        if (actionContract === "ETHER") {
+            if (!actionFunction.includes(":")) {
+                throw new Error(
+                    `Action script "${name}" does not specify both a recipient and an amount as part of an Ether transfer action (i.e. "ETHER recipient:amount")`
+                );
+            }
+            amountArgument = actionFunction.split(":")[1];
+        } else if (actionFunction.includes(":")) {
+            [actionFunction, amountArgument] = actionFunction.split(":");
+            actionContract = "ETHER";
+            if (!payableFunctions.has(actionFunction)) {
+                throw new Error(
+                    `Action script "${name}" does not properly define "${actionFunction}" as a payable function`
+                );
+            }
+        } else if (inputFunctions.has(actionFunction)) {
+            amountArgument = splitAction[3];
+        } else {
+            return inputTokens; // Not an action requiring an input token declaration
+        }
+
+        if (!(actionContract in inputTokens)) {
+            console.log(inputTokens);
+            throw new Error(
+                `Action script "${name}" does not properly declare "${actionContract}" as an input token`
+            );
+        }
+
+        const candidates = inputTokens[actionContract];
+        if (!candidates.includes(amountArgument)) {
+            // TODO: handle <= raw amounts
+            throw new Error(
+                `Action script "${name}" action "${actionContract} ${actionFunction}" contains a token transfer or approval input argument "${amountArgument}" that does not map back to a declared input`
+            );
+        }
+
+        const indexToPop = candidates.indexOf(amountArgument);
+        inputTokens[actionContract] = candidates
+            .slice(0, indexToPop)
+            .concat(candidates.slice(indexToPop + 1));
+
+        return inputTokens;
+    }
+
+    static validateInputs(actionScript) {
+        const { name, variables, definitions, actions, inputs } = actionScript;
+
+        let inputTokens = {};
         for (let [i, inputObjects] of Object.entries(inputs)) {
             if (!Validator.TYPE_CHECKERS.object(inputObjects)) {
                 throw new Error(
@@ -624,55 +841,71 @@ class Validator {
             }
         }
 
+        const startingInputTokens = {...inputTokens};
+
+        // Determine each action that is a conditional
+        const conditionalActions = [];
         for (let [i, action] of Object.entries(actions)) {
-            const splitAction = action.split(" ");
-            let actionContract = splitAction[0];
-            let actionFunction = splitAction[1];
-            let amountArgument;
-            if (actionContract === "ETHER") {
-                if (!actionFunction.includes(":")) {
-                    throw new Error(
-                        `Action script "${name}" does not specify both a recipient and an amount as part of an Ether transfer action (i.e. "ETHER recipient:amount")`
-                    );
+            if (Validator.TYPE_CHECKERS.object(action)) {
+                conditionalActions.push(i);
+            }
+        }
+
+        // Determine the total number of conditional (else or then) combinations
+        const conditionalCombinations = [...Array(2 ** conditionalActions.length).keys()]
+            .map(a => ([...Array(conditionalActions.length).keys()]
+                .map(b => !((a >> b) & 1)))
+            ).map(combination => Object.fromEntries(combination.map((condition, i) => (
+                [conditionalActions[i], condition]
+            ))));
+
+        // Ensure that each input token is only spent once for each combination
+        for (const conditionalCombination of conditionalCombinations) {
+            inputTokens = {...startingInputTokens};
+            for (let [i, action] of Object.entries(actions)) {
+                if (i in conditionalCombination) {
+                    if (!action.if.condition.includes(" is ")) {
+                        throw new Error(
+                            `Action script "${name}" has a condition that does not contain a direct comparison (for now only "<TOKEN_X> is <TOKEN_Y || ETHER>" is supported)`
+                        );
+                    }
+
+                    const splitCondition = action.if.condition.split(" ");
+                    if (splitCondition.length !== 3) {
+                        throw new Error(
+                            `Action script "${name}" has a condition that does not contain exactly three arguments (for now only "<TOKEN_X> is <TOKEN_Y || ETHER>" is supported)`
+                        );
+                    }
+
+                    const inputTokenToReplace = splitCondition[0];
+                    const replacementInputToken = splitCondition[2];
+                    let replacement = false;
+                    if (conditionalCombination[i] && inputTokenToReplace in inputTokens) {
+                        replacement = true;
+                        const inputValuesToReplace = inputTokens[inputTokenToReplace];
+                        delete inputTokens[inputTokenToReplace];
+                        inputTokens[replacementInputToken] = inputValuesToReplace;
+                    }
+                    const thenOrElse = conditionalCombination[i] ? "then" : "else";
+                    for (let conditionalAction of action.if[thenOrElse]) {
+                        inputTokens = Validator.validateInput(
+                            conditionalAction, actionScript, inputTokens
+                        );
+                    }
+                    if (replacement) {
+                        const inputValuesToReplace = inputTokens[replacementInputToken];
+                        delete inputTokens[replacementInputToken];
+                        inputTokens[inputTokenToReplace] = inputValuesToReplace;
+                    }
+                } else {
+                    inputTokens = Validator.validateInput(action, actionScript, inputTokens);
                 }
-                amountArgument = actionFunction.split(":")[1];
-            } else if (actionFunction.includes(":")) {
-                [actionFunction, amountArgument] = actionFunction.split(":");
-                actionContract = "ETHER";
-                if (!payableFuntions.has(actionFunction)) {
-                    throw new Error(
-                        `Action script "${name}" does not properly define "${actionFunction}" as a payable function`
-                    );
-                }
-            } else if (inputFunctions.has(actionFunction)) {
-                amountArgument = splitAction[3];
-            } else {
-                continue; // Not an action requiring an input token declaration
             }
-
-            if (!(actionContract in inputTokens)) {
-                throw new Error(
-                    `Action script "${name}" does not properly declare "${actionContract}" as an input token`
-                );
-            }
-
-            const candidates = inputTokens[actionContract];
-            if (!candidates.includes(amountArgument)) {
-                // TODO: handle <= raw amounts
-                throw new Error(
-                    `Action script "${name}" action "${actionContract} ${actionFunction}" contains a token transfer or approval input argument "${amountArgument}" that does not map back to a declared input`
-                );
-            }
-
-            const indexToPop = candidates.indexOf(amountArgument);
-            inputTokens[actionContract] = candidates
-                .slice(0, indexToPop)
-                .concat(candidates.slice(indexToPop + 1));
         }
 
         // Note: staking, redeeming, or burning tokens may result in inputs that
         // are difficult to detect statically (and will need to be validated via
-        // simulation and balance checks).
+        // simulation and balance checks) – but it'd look something like this:
         // const residualInputs = Object.values(inputTokens).flat();
         // if (residualInputs.length !== 0) {
         //     console.log(`Note: Action script "${name}" may not utilize "${residualInputs.join(', ')}"`);

@@ -225,10 +225,11 @@ const ERC20_ABI = [
     },
 ];
 
+const ETHER_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+
 class Encoder {
     static async encode(actionScriptName, variables, wallet) {
         const encoder = new Encoder(actionScriptName, variables, wallet);
-
         await encoder.parseActionScriptDefinitions();
         await encoder.constructCallsAndResultsFormat();
 
@@ -241,6 +242,126 @@ class Encoder {
         this.variables["wallet"] = wallet;
     }
 
+    constructCallAndResultFormat(action) {
+        const appliedArgs = [];
+
+        // parse calls
+        const splitActionCalls = action.split(" => ")[0];
+
+        let [contractName, functionName, ...args] = splitActionCalls.split(
+            " "
+        );
+
+        if (contractName === "ETHER") {
+            args = functionName.split(":");
+        }
+
+        let payableArg = 0;
+        let appliedPayableArg = 0;
+        if (functionName.includes(":")) {
+            payableArg = functionName.split(":")[1];
+            functionName = functionName.split(":")[0];
+
+            if (payableArg in this.variables) {
+                appliedPayableArg = this.variables[payableArg];
+            } else if (payableArg in this.targetContracts) {
+                appliedPayableArg = this.targetContracts[payableArg]
+                    .address;
+            } else {
+                appliedPayableArg = payableArg;
+            }
+        }
+
+        for (let arg of args) {
+            if (arg in this.variables) {
+                const appliedArg = this.variables[arg];
+                appliedArgs.push(appliedArg);
+            } else if (arg in this.targetContracts) {
+                appliedArgs.push(this.targetContracts[arg].address);
+            } else {
+                appliedArgs.push(arg);
+            }
+        }
+
+        let targetFunction = this.targetFunctions[functionName];
+
+        if (!!targetFunction && targetFunction.includes(":")) {
+            targetFunction = targetFunction.split(":")[0];
+        }
+
+        if (contractName === "ETHER") {
+            this.calls.push({
+                to: appliedArgs[0],
+                value: appliedArgs[1],
+                data: "0x",
+            });
+
+            this.callABIs.push({
+                payable: true,
+                stateMutability: "payable",
+                type: "fallback",
+            });
+        } else if (targetFunction === "fallback") {
+            const contract = this.contracts[contractName];
+            const to = contract.address;
+
+            this.calls.push({
+                to,
+                value: appliedPayableArg,
+                data: "0x",
+            });
+
+            this.callABIs.push({
+                payable: true,
+                stateMutability: "payable",
+                type: "fallback",
+            });
+        } else {
+            const contract = this.contracts[contractName];
+
+            const to = contract.address;
+            const data = contract.interface.encodeFunctionData(
+                targetFunction,
+                appliedArgs
+            );
+
+            this.calls.push({
+                to,
+                value: appliedPayableArg,
+                data,
+            });
+
+            const callABIIndex = this.targetContracts[contractName].abi
+                .map((f) => f.name)
+                .indexOf(targetFunction);
+
+            if (callABIIndex === -1) {
+                throw new Error("Could not find function ABI");
+            }
+
+            this.callABIs.push(
+                this.targetContracts[contractName].abi[callABIIndex]
+            );
+
+            // parse results
+            const splitActionResults = action.split(" => ");
+
+            if (splitActionResults.length === 1) {
+                return;
+            }
+
+            const results = splitActionResults[1].split(" ");
+
+            for (let [argumentIndex, result] of Object.entries(results)) {
+                if (!(this.callIndex in this.resultToParse)) {
+                    this.resultToParse[this.callIndex] = {};
+                }
+
+                this.resultToParse[this.callIndex][argumentIndex] = result;
+            }
+        }
+    }
+
     async constructCallsAndResultsFormat() {
         const script = await Validator.getActionScript(this.actionScriptName);
 
@@ -248,138 +369,36 @@ class Encoder {
         this.callABIs = [];
         this.resultToParse = {};
 
-        const contracts = Object.fromEntries(
-            Object.entries(this.targetContracts).map(([name, value]) => {
-                return [
-                    name,
-                    new ethers.Contract(
-                        value.address,
-                        value.abi,
-                        ethers.provider
-                    ),
-                ];
-            })
-        );
-
         const { actions } = script;
 
-        for (let [callIndex, action] of Object.entries(actions)) {
-            const appliedArgs = [];
+        this.callIndex = 0;
+        for (let action of actions) {
+            // detect conditionals
+            if (typeof action === 'object' && 'if' in action) {
+                const splitConditon = action.if.condition.split(" ");
+                const tokenToReplace = splitConditon[0];
+                const replacementToken = splitConditon[2];
 
-            // parse calls
-            const splitActionCalls = action.split(" => ")[0];
+                const tokenToReplaceAddress = this.contracts[tokenToReplace].address;
 
-            let [contractName, functionName, ...args] = splitActionCalls.split(
-                " "
-            );
+                const conditionTrue = (
+                    replacementToken === 'ETHER' &&
+                    tokenToReplaceAddress === ETHER_ADDRESS
+                ) || (
+                    tokenToReplaceAddress === (
+                        this.contracts[replacementToken] &&
+                        this.contracts[replacementToken].address
+                    )
+                );
 
-            if (contractName === "ETHER") {
-                args = functionName.split(":");
-            }
-
-            let payableArg = 0;
-            let appliedPayableArg = 0;
-            if (functionName.includes(":")) {
-                payableArg = functionName.split(":")[1];
-                functionName = functionName.split(":")[0];
-
-                if (payableArg in this.variables) {
-                    appliedPayableArg = this.variables[payableArg];
-                } else if (payableArg in this.targetContracts) {
-                    appliedPayableArg = this.targetContracts[payableArg]
-                        .address;
-                } else {
-                    appliedPayableArg = payableArg;
+                const conditionalActions = action.if[conditionTrue ? 'then' : 'else'];
+                for (let conditionalAction of conditionalActions) {
+                    this.constructCallAndResultFormat(conditionalAction);
+                    this.callIndex++;
                 }
-            }
-
-            for (let arg of args) {
-                if (arg in this.variables) {
-                    const appliedArg = this.variables[arg];
-                    appliedArgs.push(appliedArg);
-                } else if (arg in this.targetContracts) {
-                    appliedArgs.push(this.targetContracts[arg].address);
-                } else {
-                    appliedArgs.push(arg);
-                }
-            }
-
-            let targetFunction = this.targetFunctions[functionName];
-
-            if (!!targetFunction && targetFunction.includes(":")) {
-                targetFunction = targetFunction.split(":")[0];
-            }
-
-            if (contractName === "ETHER") {
-                this.calls.push({
-                    to: appliedArgs[0],
-                    value: appliedArgs[1],
-                    data: "0x",
-                });
-
-                this.callABIs.push({
-                    payable: true,
-                    stateMutability: "payable",
-                    type: "fallback",
-                });
-            } else if (targetFunction === "fallback") {
-                const contract = contracts[contractName];
-                const to = contract.address;
-
-                this.calls.push({
-                    to,
-                    value: appliedPayableArg,
-                    data: "0x",
-                });
-
-                this.callABIs.push({
-                    payable: true,
-                    stateMutability: "payable",
-                    type: "fallback",
-                });
             } else {
-                const contract = contracts[contractName];
-
-                const to = contract.address;
-                const data = contract.interface.encodeFunctionData(
-                    targetFunction,
-                    appliedArgs
-                );
-
-                this.calls.push({
-                    to,
-                    value: appliedPayableArg,
-                    data,
-                });
-
-                const callABIIndex = this.targetContracts[contractName].abi
-                    .map((f) => f.name)
-                    .indexOf(targetFunction);
-
-                if (callABIIndex === -1) {
-                    throw new Error("Could not find function ABI");
-                }
-
-                this.callABIs.push(
-                    this.targetContracts[contractName].abi[callABIIndex]
-                );
-
-                // parse results
-                const splitActionResults = action.split(" => ");
-
-                if (splitActionResults.length === 1) {
-                    continue;
-                }
-
-                const results = splitActionResults[1].split(" ");
-
-                for (let [argumentIndex, result] of Object.entries(results)) {
-                    if (!(callIndex in this.resultToParse)) {
-                        this.resultToParse[callIndex] = {};
-                    }
-
-                    this.resultToParse[callIndex][argumentIndex] = result;
-                }
+                this.constructCallAndResultFormat(action);
+                this.callIndex++;
             }
         }
     }
@@ -397,6 +416,7 @@ class Encoder {
             totalSupply: "totalSupply",
             allowance: "allowance",
         };
+
         for (let definition of definitions) {
             const splitDefinition = definition.split(" "); // Contract | Token | Function | Action
 
@@ -534,6 +554,19 @@ class Encoder {
                     break;
             }
         }
+
+        this.contracts = Object.fromEntries(
+            Object.entries(this.targetContracts).map(([name, value]) => {
+                return [
+                    name,
+                    new ethers.Contract(
+                        value.address,
+                        value.abi,
+                        ethers.provider
+                    ),
+                ];
+            })
+        );
     }
 }
 
