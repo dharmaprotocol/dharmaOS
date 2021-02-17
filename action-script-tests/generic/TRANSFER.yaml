@@ -1,0 +1,25 @@
+name: TRANSFER
+blockNumber: 11876531
+tests:
+  - name: Transfer Token
+    success: true
+    variables:
+      token: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      to: "0x7e4A8391C728fEd9069B2962699AB416628B19Fa"
+      amount: "1000000000000000000"
+    results: {}
+    events:
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0x7e4A8391C728fEd9069B2962699AB416628B19Fa"
+          value: "1000000000000000000"
+  - name: Transfer Ether
+    success: true
+    variables:
+      token: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+      to: "0x7e4A8391C728fEd9069B2962699AB416628B19Fa"
+      amount: "1000000000000000000"
+    results: {}
+    events: []

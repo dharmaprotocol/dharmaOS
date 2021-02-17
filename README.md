@@ -40,7 +40,7 @@ This file contains 11 required fields:
     - Function `<functionName>` `contractName` `functionSignature` ⇒ `returnTypes`
     - Action `<actionName>` `actionName`
 - inputs: a list of defined Tokens and the raw amount of that token that can be either approved or transferred
-- actions: a list of steps to take as part of the action script (including calling other action scripts). If the argument or result in question has the same variable name as the target action script, that name may be used — otherwise, the argument or result should be formated as `targetActionScriptVariable:sourceActionScriptVariable`. Note that arguments may be reused, but results can only be declared once, and (as of now) results cannot be used as arguments in subsequent steps.
+- actions: a list of steps to take as part of the action script (including calling other action scripts). If the argument or result in question has the same variable name as the target action script, that name may be used — otherwise, the argument or result should be formated as `targetActionScriptVariable:sourceActionScriptVariable`. Note that arguments may be reused, but results can only be declared once, and (as of now) results cannot be used as arguments in subsequent steps. Actions may also employ "conditionals" — see "Notes" below for details.
     - `actionName` `argument1` `targetActionScripVariableName:argument2` ⇒ `result1` `targetActionScripResultName:result2`
     - `contractName` `functionName` `argument3` `argument4` ⇒ `result3` `result4`
     - `Operation` `<math>` ⇒ `result5`
@@ -88,7 +88,7 @@ operations:
 
 outputs:
  - yVAULT: yVaultReceivedAmount
- 
+
 associations: # N/A
 
 description: "Mint ${yVaultReceivedAmount:yVAULT.decimals} ${yVAULT.symbol} using ${suppliedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol}"
@@ -151,4 +151,15 @@ module.exports = {
     maximumNumberOfPools: "3",
   }
 };
+```
+
+To use "conditional" actions, where a batch of actions to be performed is determined by the result of a stated condition, format the action as follows (note that only direct comparisons of defined tokens to other defined tokens or Ether are currently supported):
+```yaml
+actions:
+ - if:
+    condition: TOKEN is ETHER
+    then:
+       - ETHER to:amount
+    else:
+       - TOKEN transfer to amount
 ```

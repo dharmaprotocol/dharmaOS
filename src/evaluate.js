@@ -230,6 +230,8 @@ const ERC20_ABI = [
     },
 ];
 
+const ETHER_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+
 const getRandomArbitrary = (min, max) => Math.random() * (max - min) + min;
 
 const longer = () =>
@@ -249,9 +251,7 @@ const get = async (url, params = {}, retries = 0) => {
         return data;
     } catch (error) {
         if (retries > 3) {
-            console.log("MAX RETRIES EXCEEDED");
-            console.error(error);
-            process.exit(1);
+            throw new Error(`MAX RETRIES EXCEEDED: ${error.message}`);
         }
         await longer();
         return await get(url, params, retries + 1);
@@ -306,8 +306,7 @@ const getABI = async (account) => {
 
         fs.writeFileSync(contractABIPath, abi, "utf8", (err) => {
             if (err) {
-                console.error(err);
-                process.exit(1);
+                throw new Error(`Could not write ABI to file: ${err.message}`);
             }
         });
     }
@@ -457,7 +456,10 @@ async function evaluate(actionScriptName, variables, blockNumber) {
 
     for (let [tokenName, amount] of Object.entries(inputTokens)) {
         const balance = await signer.getBalance();
-        if (tokenName === "ETHER") {
+        if (
+            tokenName === "ETHER" ||
+            tokenDefinitions[tokenName] === ETHER_ADDRESS
+        ) {
             if (balance.lt(amount)) {
                 throw new Error(
                     `Ether input amount ${amount} exceeds available balance ${balance}`
@@ -479,6 +481,13 @@ async function evaluate(actionScriptName, variables, blockNumber) {
             }
         } else {
             const tokenAddress = tokenDefinitions[tokenName];
+
+            if (await ethers.provider.getCode(tokenAddress) === "0x") {
+                throw new Error(
+                    `No contract bytecode found for provided token address "${tokenAddress}"`
+                );
+            }
+
             const wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
             let token;
             if (tokenAddress === wethAddress) {
