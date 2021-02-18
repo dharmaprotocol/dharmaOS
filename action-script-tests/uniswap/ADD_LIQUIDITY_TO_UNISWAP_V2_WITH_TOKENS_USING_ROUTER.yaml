@@ -1,4 +1,4 @@
-name: ADD_LIQUIDITY_TO_UNISWAP_V2_USING_ROUTER
+name: ADD_LIQUIDITY_TO_UNISWAP_V2_WITH_TOKENS_USING_ROUTER
 blockNumber: 11837656
 tests:
   - name: Add liquidity to Uniswap pairs, supplying both tokens that make up the
