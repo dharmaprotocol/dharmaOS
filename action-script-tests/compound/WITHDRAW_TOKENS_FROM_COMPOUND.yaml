@@ -1,0 +1,44 @@
+name: WITHDRAW_TOKENS_FROM_COMPOUND
+blockNumber: 11837756
+tests:
+  - name: Redeem cTokens from Compound and receive underlying tokens
+    success: true
+    variables:
+      receivedTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      cTokenAddress: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+      cTokenAmount: "5000000000"
+    results:
+      receivedAmount: "1053645172927745548"
+    events:
+      - address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+        name: AccrueInterest
+        args:
+          cashPrior: "193043736742687077127248122"
+          interestAccumulated: "764477783114327090636"
+          borrowIndex: "1068083940266901965"
+          totalBorrows: "1605754848162512638640940529"
+      - address: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B"
+        name: DistributedSupplierComp
+        args:
+          cToken: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+          supplier: "wallet"
+          compDelta: "39324508"
+          compSupplyIndex: "42954503291697505946562214871982915621622"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+          to: "wallet"
+          value: "1053645227412407349"
+      - address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+        name: Transfer
+        args:
+          from: "wallet"
+          to: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+          value: "5000000000"
+      - address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+        name: Redeem
+        args:
+          redeemer: "wallet"
+          redeemAmount: "1053645227412407349"
+          redeemTokens: "5000000000"

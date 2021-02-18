@@ -1,4 +1,4 @@
-name: "WITHDRAW_FROM_COMPOUND"
+name: "WITHDRAW_TOKENS_FROM_COMPOUND"
 
 summary: "Redeem cTokens from Compound and receive underlying tokens"
 
@@ -14,23 +14,14 @@ definitions:
  - Token UNDERLYING receivedTokenAddress
  - Token cTOKEN cTokenAddress
  - Function redeem cTOKEN redeem(uint256) => uint256
- - Token cETH 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5
- - Contract CETH_REDEEMER 0x27D9E416aE2cC789b1b63Ed5bF0d1A71E329ab1c
- - Function redeemCETH CETH_REDEEMER redeem(uint256) => uint256
 
 inputs:
  - cTOKEN: cTokenAmount
 
 actions:
- - if:
-    condition: cTOKEN is cETH
-    then:
-       - cETH approve CETH_REDEEMER cTokenAmount
-       - CETH_REDEEMER redeemCETH cTokenAmount => receivedAmount
-    else:
-       - UNDERLYING balanceOf wallet => initialReceivedAmount
-       - cTOKEN redeem cTokenAmount
-       - UNDERLYING balanceOf wallet => finalReceivedAmount
+ - UNDERLYING balanceOf wallet => initialReceivedAmount
+ - cTOKEN redeem cTokenAmount
+ - UNDERLYING balanceOf wallet => finalReceivedAmount
 
 operations:
  - finalReceivedAmount - initialReceivedAmount => receivedAmount
