@@ -624,75 +624,95 @@ class Validator {
         };
     }
 
+    static validateConditionalAction(action, index, actionScript) {
+        const { name } = actionScript;
+        if (
+            Object.keys(action).length !== 1 ||
+            Object.keys(action)[0] !== 'if'
+        ) {
+            throw new Error(
+                `Action script "${name}" action #${parseInt(index) + 1} supplies an object that is not a conditional (key: "if")`
+            );
+        }
+
+        const conditionalValues = Object.values(action)[0];
+        if (
+            !Validator.TYPE_CHECKERS.object(conditionalValues)
+        ) {
+            throw new Error(
+                `Action script "${name}" action #${parseInt(index) + 1} supplies an object that is not a conditional ("if" value is not an object)`
+            );
+        }
+
+        const validFields = new Set(
+            Object.keys(Validator.CONDITIONAL_FIELDS_AND_TYPES)
+        );
+        for (let field of Object.keys(conditionalValues)) {
+            if (!validFields.has(field)) {
+                throw new Error(
+                    `Action script "${name}" condition (action #${parseInt(index) + 1}) contains invalid field "${field}"`
+                );
+            }
+        }
+
+        for (let [field, type] of Object.entries(
+            Validator.CONDITIONAL_FIELDS_AND_TYPES
+        )) {
+            if (!(field in conditionalValues)) {
+                throw new Error(
+                    `Action script "${name}" condition (action #${parseInt(index) + 1}) must contain a "${field}" field`
+                );
+            }
+            if (!Validator.TYPE_CHECKERS[type](conditionalValues[field])) {
+                throw new Error(
+                    `Action script "${name}" condition (action #${parseInt(index) + 1}) field "${field}" must be of type "${type}"`
+                );
+            }
+
+            if (type === 'array') {
+                for (let [conditionalActionIndex, conditionalAction] of Object.entries(conditionalValues[field])) {
+                    if (Validator.TYPE_CHECKERS.object(conditionalAction)) {
+                        try {
+                            Validator.validateConditionalAction(
+                                conditionalAction,
+                                conditionalActionIndex,
+                                actionScript
+                            );
+                        } catch (error) {
+                            throw new Error(
+                                `Action script "${name}" condition (action #${parseInt(index) + 1}) field "${field}" threw the following error during validation of nested conditional action during conditional action #${parseInt(conditionalActionIndex) + 1}: ${error.message}`
+                            );
+                        }
+                    } else {
+                        const splitConditionalAction = conditionalAction.split(" ");
+
+                        try {
+                            Validator.validateAction(
+                                conditionalAction,
+                                conditionalActionIndex,
+                                actionScript
+                            );
+                        } catch (error) {
+                            throw new Error(
+                                `Action script "${name}" condition (action #${parseInt(index) + 1}) field "${field}" threw the following error during validation during conditional action #${parseInt(conditionalActionIndex) + 1}: ${error.message}`
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     static validateActions(actionScript) {
-        const { name, actions } = actionScript;
+        const { actions } = actionScript;
 
         for (let [index, action] of Object.entries(actions)) {
             if (Validator.TYPE_CHECKERS.object(action)) {
-                // check for conditional
-                if (
-                    Object.keys(action).length !== 1 ||
-                    Object.keys(action)[0] !== 'if'
-                ) {
-                    throw new Error(
-                        `Action script "${name}" action #${parseInt(index) + 1} supplies an object that is not a conditional (key: "if")`
-                    );
-                }
-
-                const conditionalValues = Object.values(action)[0];
-                if (
-                    !Validator.TYPE_CHECKERS.object(conditionalValues)
-                ) {
-                    throw new Error(
-                        `Action script "${name}" action #${parseInt(index) + 1} supplies an object that is not a conditional ("if" value is not an object)`
-                    );
-                }
-
-                const validFields = new Set(
-                    Object.keys(Validator.CONDITIONAL_FIELDS_AND_TYPES)
-                );
-                for (let field of Object.keys(conditionalValues)) {
-                    if (!validFields.has(field)) {
-                        throw new Error(
-                            `Action script "${name}" condition (action #${parseInt(index) + 1}) contains invalid field "${field}"`
-                        );
-                    }
-                }
-
-                for (let [field, type] of Object.entries(
-                    Validator.CONDITIONAL_FIELDS_AND_TYPES
-                )) {
-                    if (!(field in conditionalValues)) {
-                        throw new Error(
-                            `Action script "${name}" condition (action #${parseInt(index) + 1}) must contain a "${field}" field`
-                        );
-                    }
-                    if (!Validator.TYPE_CHECKERS[type](conditionalValues[field])) {
-                        throw new Error(
-                            `Action script "${name}" condition (action #${parseInt(index) + 1}) field "${field}" must be of type "${type}"`
-                        );
-                    }
-
-                    if (type === 'array') {
-                        for (let [conditionalActionIndex, conditionalAction] of Object.entries(conditionalValues[field])) {
-                            const splitConditionalAction = conditionalAction.split(" ");
-
-
-                            try {
-                                Validator.validateAction(
-                                    conditionalAction,
-                                    conditionalActionIndex,
-                                    actionScript
-                                );
-                            } catch (error) {
-                                throw new Error(
-                                    `Action script "${name}" condition (action #${parseInt(index) + 1}) field "${field}" threw the following error during validation during conditional action #${parseInt(conditionalActionIndex) + 1}: ${error.message}`
-                                );
-                            }
-                        }
-
-                    }
-                }
+                Validator.validateConditionalAction(
+                    action,
+                    index,
+                    actionScript
+                )
             } else {
                 Validator.validateAction(
                     action,
@@ -791,6 +811,75 @@ class Validator {
         return inputTokens;
     }
 
+    static validateInputCombinations(actions, actionScript, inputTokens) {
+        const { name } = actionScript;
+
+        const startingInputTokens = {...inputTokens};
+
+        // Determine each action that is a conditional
+        const conditionalActions = [];
+        for (let [i, action] of Object.entries(actions)) {
+            if (Validator.TYPE_CHECKERS.object(action)) {
+                conditionalActions.push(i);
+            }
+        }
+
+        // Determine the total number of conditional (else or then) combinations
+        const conditionalCombinations = [...Array(2 ** conditionalActions.length).keys()]
+            .map(a => ([...Array(conditionalActions.length).keys()]
+                .map(b => !((a >> b) & 1)))
+            ).map(combination => Object.fromEntries(combination.map((condition, i) => (
+                [conditionalActions[i], condition]
+            ))));
+
+        // Ensure that each input token is only spent once for each combination
+        for (const conditionalCombination of conditionalCombinations) {
+            inputTokens = {...startingInputTokens};
+            for (let [i, action] of Object.entries(actions)) {
+                if (i in conditionalCombination) {
+                    if (!action.if.condition.includes(" is ")) {
+                        throw new Error(
+                            `Action script "${name}" has a condition that does not contain a direct comparison (for now only "<TOKEN_X> is <TOKEN_Y || ETHER>" is supported)`
+                        );
+                    }
+
+                    const splitCondition = action.if.condition.split(" ");
+                    if (splitCondition.length !== 3) {
+                        throw new Error(
+                            `Action script "${name}" has a condition that does not contain exactly three arguments (for now only "<TOKEN_X> is <TOKEN_Y || ETHER>" is supported)`
+                        );
+                    }
+
+                    const inputTokenToReplace = splitCondition[0];
+                    const replacementInputToken = splitCondition[2];
+                    let replacement = false;
+                    if (conditionalCombination[i] && inputTokenToReplace in inputTokens) {
+                        replacement = true;
+                        const inputValuesToReplace = inputTokens[inputTokenToReplace];
+                        delete inputTokens[inputTokenToReplace];
+                        inputTokens[replacementInputToken] = inputValuesToReplace;
+                    }
+                    const thenOrElse = conditionalCombination[i] ? "then" : "else";
+                    const conditionalActions = action.if[thenOrElse];
+
+                    inputTokens = Validator.validateInputCombinations(
+                        conditionalActions, actionScript, {...inputTokens}
+                    );
+
+                    if (replacement) {
+                        const inputValuesToReplace = inputTokens[replacementInputToken];
+                        delete inputTokens[replacementInputToken];
+                        inputTokens[inputTokenToReplace] = inputValuesToReplace;
+                    }
+                } else {
+                    inputTokens = Validator.validateInput(action, actionScript, {...inputTokens});
+                }
+            }
+        }
+
+        return inputTokens;
+    }
+
     static validateInputs(actionScript) {
         const { name, variables, definitions, actions, inputs } = actionScript;
 
@@ -841,67 +930,11 @@ class Validator {
             }
         }
 
-        const startingInputTokens = {...inputTokens};
-
-        // Determine each action that is a conditional
-        const conditionalActions = [];
-        for (let [i, action] of Object.entries(actions)) {
-            if (Validator.TYPE_CHECKERS.object(action)) {
-                conditionalActions.push(i);
-            }
-        }
-
-        // Determine the total number of conditional (else or then) combinations
-        const conditionalCombinations = [...Array(2 ** conditionalActions.length).keys()]
-            .map(a => ([...Array(conditionalActions.length).keys()]
-                .map(b => !((a >> b) & 1)))
-            ).map(combination => Object.fromEntries(combination.map((condition, i) => (
-                [conditionalActions[i], condition]
-            ))));
-
-        // Ensure that each input token is only spent once for each combination
-        for (const conditionalCombination of conditionalCombinations) {
-            inputTokens = {...startingInputTokens};
-            for (let [i, action] of Object.entries(actions)) {
-                if (i in conditionalCombination) {
-                    if (!action.if.condition.includes(" is ")) {
-                        throw new Error(
-                            `Action script "${name}" has a condition that does not contain a direct comparison (for now only "<TOKEN_X> is <TOKEN_Y || ETHER>" is supported)`
-                        );
-                    }
-
-                    const splitCondition = action.if.condition.split(" ");
-                    if (splitCondition.length !== 3) {
-                        throw new Error(
-                            `Action script "${name}" has a condition that does not contain exactly three arguments (for now only "<TOKEN_X> is <TOKEN_Y || ETHER>" is supported)`
-                        );
-                    }
-
-                    const inputTokenToReplace = splitCondition[0];
-                    const replacementInputToken = splitCondition[2];
-                    let replacement = false;
-                    if (conditionalCombination[i] && inputTokenToReplace in inputTokens) {
-                        replacement = true;
-                        const inputValuesToReplace = inputTokens[inputTokenToReplace];
-                        delete inputTokens[inputTokenToReplace];
-                        inputTokens[replacementInputToken] = inputValuesToReplace;
-                    }
-                    const thenOrElse = conditionalCombination[i] ? "then" : "else";
-                    for (let conditionalAction of action.if[thenOrElse]) {
-                        inputTokens = Validator.validateInput(
-                            conditionalAction, actionScript, inputTokens
-                        );
-                    }
-                    if (replacement) {
-                        const inputValuesToReplace = inputTokens[replacementInputToken];
-                        delete inputTokens[replacementInputToken];
-                        inputTokens[inputTokenToReplace] = inputValuesToReplace;
-                    }
-                } else {
-                    inputTokens = Validator.validateInput(action, actionScript, inputTokens);
-                }
-            }
-        }
+        inputTokens = Validator.validateInputCombinations(
+            actions,
+            actionScript,
+            {...inputTokens},
+        );
 
         // Note: staking, redeeming, or burning tokens may result in inputs that
         // are difficult to detect statically (and will need to be validated via

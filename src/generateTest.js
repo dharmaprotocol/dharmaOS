@@ -45,8 +45,7 @@ const generateSinglePassingTest = async ({
 
     for (const [i, {args}] of Object.entries(events)) {
         for (const [argName, argValue] of Object.entries(args)) {
-            if (argValue == variables.wallet) {
-                console.log(argValue, variables.wallet, argValue === variables.wallet)
+            if (argValue === variables.wallet) {
                 events[i].args[argName] = "wallet";
             }
         }
