@@ -408,6 +408,16 @@ function parseLogIncludingAnonymous(log, abi) {
     return event;
 }
 
+async function incrementFixedTime(timestamp) {
+    const incrementedTimestamp = timestamp + 2;
+    await hre.network.provider.request({
+        method: "evm_setNextBlockTimestamp",
+        params: [incrementedTimestamp],
+    });
+
+    return incrementedTimestamp;
+}
+
 async function evaluate(actionScriptName, variables, blockNumber) {
     await hre.network.provider.request({
         method: "hardhat_reset",
@@ -420,6 +430,10 @@ async function evaluate(actionScriptName, variables, blockNumber) {
             },
         ],
     });
+
+    let { timestamp } = await ethers.provider.getBlock(blockNumber);
+
+    timestamp = await incrementFixedTime(timestamp);
 
     const signers = await ethers.getSigners();
     const signer = signers[0];
@@ -471,6 +485,8 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                 value: amount,
             });
 
+            timestamp = await incrementFixedTime(timestamp);
+
             const walletBalance = await ethers.provider.getBalance(
                 wallet.address
             );
@@ -502,7 +518,11 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                 );
                 await token.deposit({ value: amount });
 
+                timestamp = await incrementFixedTime(timestamp);
+
                 await token.transfer(wallet.address, amount);
+
+                timestamp = await incrementFixedTime(timestamp);
             } else {
                 token = new ethers.Contract(
                     tokenAddress,
@@ -527,6 +547,8 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                         99999999999999,
                         { value: balance.div(2) }
                     );
+
+                    timestamp = await incrementFixedTime(timestamp);
                 } catch (error) {
                     // find an account with sufficient Token amount, take over and transfer
                     let accountToTakeOver;
@@ -584,6 +606,8 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                         value: ethers.utils.parseEther("1"),
                     });
 
+                    timestamp = await incrementFixedTime(timestamp);
+
                     await hre.network.provider.request({
                         method: "hardhat_impersonateAccount",
                         params: [accountToTakeOver],
@@ -607,6 +631,8 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                         method: "hardhat_stopImpersonatingAccount",
                         params: [accountToTakeOver],
                     });
+
+                    timestamp = await incrementFixedTime(timestamp);
 
                     token = new ethers.Contract(
                         tokenAddress,
