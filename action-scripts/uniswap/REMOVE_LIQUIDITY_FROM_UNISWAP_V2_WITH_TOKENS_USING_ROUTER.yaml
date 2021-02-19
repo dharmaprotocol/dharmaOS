@@ -1,4 +1,4 @@
-name: "REMOVE_LIQUIDITY_FROM_UNISWAP_V2_USING_ROUTER"
+name: "REMOVE_LIQUIDITY_FROM_UNISWAP_V2_WITH_TOKENS_USING_ROUTER"
 
 summary: "Remove liquidity from Uniswap pairs, burning LP tokens and receiving both tokens that make up the pair"
 
@@ -16,24 +16,13 @@ definitions:
   - Token LIQUIDITY_TOKEN liquidityTokenAddress
   - Contract UNISWAP_ROUTER 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
   - Function removeLiquidity UNISWAP_ROUTER removeLiquidity(address,address,uint256,uint256,uint256,address,uint256) => uint256 uint256
-  - Function removeLiquidityWithEther UNISWAP_ROUTER removeLiquidityETH(address,uint256,uint256,uint256,address,uint256) => uint256 uint256
 
 inputs:
   - LIQUIDITY_TOKEN: liquidityAmount
 
 actions:
  - LIQUIDITY_TOKEN approve UNISWAP_ROUTER liquidityAmount
- - if:
-    condition: TOKEN_A is ETHER
-    then:
-       - UNISWAP_ROUTER removeLiquidityWithEther tokenBAddress liquidityAmount amountBMin amountAMin wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => receivedAmountB receivedAmountA
-    else:
-       - if:
-          condition: TOKEN_B is ETHER
-          then:
-             - UNISWAP_ROUTER removeLiquidityWithEther tokenAAddress liquidityAmount amountAMin amountBMin wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => receivedAmountA receivedAmountB
-          else:
-             - UNISWAP_ROUTER removeLiquidity tokenAAddress tokenBAddress liquidityAmount amountAMin amountBMin wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => receivedAmountA receivedAmountB
+ - UNISWAP_ROUTER removeLiquidity tokenAAddress tokenBAddress liquidityAmount amountAMin amountBMin wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => receivedAmountA receivedAmountB
 
 outputs:
   - TOKEN_A: receivedAmountA

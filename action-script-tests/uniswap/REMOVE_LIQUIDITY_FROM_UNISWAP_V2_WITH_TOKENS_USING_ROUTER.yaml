@@ -1,0 +1,59 @@
+name: REMOVE_LIQUIDITY_FROM_UNISWAP_V2_WITH_TOKENS_USING_ROUTER
+blockNumber: 11838186
+tests:
+  - name: Remove liquidity from Uniswap pairs, burning LP tokens and receiving both
+      tokens that make up the pair
+    success: true
+    variables:
+      tokenAAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      tokenBAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+      liquidityTokenAddress: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+      liquidityAmount: "100000000"
+      amountAMin: "10000000000000"
+      amountBMin: "100"
+    results:
+      receivedAmountA: "109523179814063"
+      receivedAmountB: "109"
+    events:
+      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+        name: Approval
+        args:
+          owner: "wallet"
+          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "100000000"
+      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+        name: Transfer
+        args:
+          from: "wallet"
+          to: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+          value: "100000000"
+      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+        name: Transfer
+        args:
+          from: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+          to: "0x0000000000000000000000000000000000000000"
+          value: "100000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+          to: "wallet"
+          value: "109523179814063"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+          to: "wallet"
+          value: "109"
+      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+        name: Sync
+        args:
+          reserve0: "11012203493932040927784977"
+          reserve1: "11010865327354"
+      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+        name: Burn
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0: "109523179814063"
+          amount1: "109"
+          to: "wallet"
