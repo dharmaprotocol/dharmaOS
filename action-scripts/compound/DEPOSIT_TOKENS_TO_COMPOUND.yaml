@@ -1,4 +1,4 @@
-name: "DEPOSIT_TO_COMPOUND"
+name: "DEPOSIT_TOKENS_TO_COMPOUND"
 
 summary: "Mint cTokens from Compound using supported tokens"
 
@@ -14,21 +14,14 @@ definitions:
  - Token UNDERLYING suppliedTokenAddress
  - Token cTOKEN cTokenAddress
  - Function mint cTOKEN mint(uint256) => uint256
- - Token cETH 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5
- - Function mintUsingEth cETH mint():payable
 
 inputs:
  - UNDERLYING: suppliedAmount
 
 actions:
  - cTOKEN balanceOf wallet => cTokenInitialAmount
- - if:
-    condition: UNDERLYING is ETHER
-    then:
-       - cETH mintUsingEth:suppliedAmount
-    else:
-       - UNDERLYING approve cTOKEN suppliedAmount
-       - cTOKEN mint suppliedAmount
+ - UNDERLYING approve cTOKEN suppliedAmount
+ - cTOKEN mint suppliedAmount
  - cTOKEN balanceOf wallet => cTokenFinalAmount
 
 operations:

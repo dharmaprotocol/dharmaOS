@@ -11,9 +11,10 @@ variables:
   amountBMin: uint256
   liquidityTokenAddress: address
 
-inputs:
-  - TOKEN_A: amountADesired
-  - TOKEN_B: amountBDesired
+results:
+  receivedLiquidityAmount: uint256
+  suppliedAmountA: uint256
+  suppliedAmountB: uint256
 
 definitions:
  - Token TOKEN_A tokenAAddress
@@ -21,16 +22,28 @@ definitions:
  - Token LIQUIDITY_TOKEN liquidityTokenAddress
  - Contract UNISWAP_ROUTER 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
  - Function addLiquidity UNISWAP_ROUTER addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256) => uint256 uint256 uint256
+ - Function addLiquidityWithEther UNISWAP_ROUTER addLiquidityETH(address,uint256,uint256,uint256,address,uint256):payable => uint256 uint256 uint256
+
+inputs:
+  - TOKEN_A: amountADesired
+  - TOKEN_B: amountBDesired
 
 actions:
- - TOKEN_A approve UNISWAP_ROUTER amountADesired
- - TOKEN_B approve UNISWAP_ROUTER amountBDesired
- - UNISWAP_ROUTER addLiquidity tokenAAddress tokenBAddress amountADesired amountBDesired amountAMin amountBMin wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => suppliedAmountA suppliedAmountB receivedLiquidityAmount
-
-results:
-  receivedLiquidityAmount: uint256
-  suppliedAmountA: uint256
-  suppliedAmountB: uint256
+ - if:
+    condition: TOKEN_A is ETHER
+    then:
+       - TOKEN_B approve UNISWAP_ROUTER amountBDesired
+       - UNISWAP_ROUTER addLiquidityWithEther:amountADesired tokenBAddress amountBDesired amountBMin amountAMin wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => suppliedAmountB suppliedAmountA receivedLiquidityAmount
+    else:
+       - if:
+          condition: TOKEN_B is ETHER
+          then:
+             - TOKEN_A approve UNISWAP_ROUTER amountADesired
+             - UNISWAP_ROUTER addLiquidityWithEther:amountBDesired tokenAAddress amountADesired amountAMin amountBMin wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => suppliedAmountA suppliedAmountB receivedLiquidityAmount
+          else:
+             - TOKEN_A approve UNISWAP_ROUTER amountADesired
+             - TOKEN_B approve UNISWAP_ROUTER amountBDesired
+             - UNISWAP_ROUTER addLiquidity tokenAAddress tokenBAddress amountADesired amountBDesired amountAMin amountBMin wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => suppliedAmountA suppliedAmountB receivedLiquidityAmount
 
 outputs:
  - LIQUIDITY_TOKEN: receivedLiquidityAmount

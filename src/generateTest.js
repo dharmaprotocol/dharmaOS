@@ -7,12 +7,15 @@ const { Validator } = require("./validator");
 const { TestValidator } = require("./test-validator");
 const { evaluate } = require("./evaluate");
 
-const generateSinglePassingTest = async (
+const generateSinglePassingTest = async ({
     actionScriptName,
     variables,
-    actionScriptTestName = null
-) => {
-    const blockNumber = await ethers.provider.getBlockNumber();
+    actionScriptTestName = null,
+    blockNumber = null,
+}) => {
+    if (!blockNumber) {
+        blockNumber = await ethers.provider.getBlockNumber();
+    }
 
     let testName = actionScriptTestName;
     if (testName === null) {
@@ -42,8 +45,7 @@ const generateSinglePassingTest = async (
 
     for (const [i, {args}] of Object.entries(events)) {
         for (const [argName, argValue] of Object.entries(args)) {
-            if (argValue == variables.wallet) {
-                console.log(argValue, variables.wallet, argValue === variables.wallet)
+            if (argValue === variables.wallet) {
                 events[i].args[argName] = "wallet";
             }
         }
@@ -89,15 +91,17 @@ const writeTestToFile = async (actionScriptName, testYAML, category) => {
     );
 };
 
-const createSinglePassingTestAndWrite = async (
+const createSinglePassingTestAndWrite = async ({
     category,
     actionScriptName,
-    variables
-) => {
-    const testYAML = await generateSinglePassingTest(
+    variables,
+    blockNumber = null,
+}) => {
+    const testYAML = await generateSinglePassingTest({
         actionScriptName,
-        variables
-    );
+        variables,
+        blockNumber,
+    });
     console.log(testYAML);
 
     await writeTestToFile(actionScriptName, testYAML, category);
@@ -122,6 +126,7 @@ const getInputs = async () => {
     let testGenerationConfig;
     let actionScriptName;
     let variables = {};
+    let blockNumber = null;
     try {
         testGenerationConfig = require('../test-generation-config');
         if (!('actionScriptName') in testGenerationConfig) {
@@ -138,6 +143,10 @@ const getInputs = async () => {
 
         if (!!testGenerationConfig.variables) {
             variables = testGenerationConfig.variables;
+        }
+
+        if (!!testGenerationConfig.blockNumber) {
+            blockNumber = testGenerationConfig.blockNumber;
         }
 
         console.log(`Located test-generation-config.js — generating test for ${actionScriptName}.`);
@@ -319,15 +328,16 @@ const getInputs = async () => {
     }
 
     return {
-        name: actionScriptName,
+        actionScriptName,
         category: actionScriptCategory,
         variables,
+        blockNumber,
     };
 };
 
 const main = async () => {
-    const { name, category, variables } = await getInputs();
-    await createSinglePassingTestAndWrite(category, name, variables);
+    const { actionScriptName, category, variables, blockNumber } = await getInputs();
+    await createSinglePassingTestAndWrite({category, actionScriptName, variables, blockNumber});
 };
 
 main();

@@ -78,7 +78,10 @@ class ResultsParser {
                 ...parsedResults,
             };
 
-            parsedResults[output] = this.evaluateOperation(input, context);
+            // Skip operation if result already exists
+            if (!(output in parsedResults)) {
+                parsedResults[output] = this.evaluateOperation(input, context);
+            }
         }
 
         const finalResults = {};
