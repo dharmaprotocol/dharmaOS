@@ -409,7 +409,7 @@ function parseLogIncludingAnonymous(log, abi) {
 }
 
 async function incrementFixedTime(timestamp) {
-    const incrementedTimestamp = timestamp + 2;
+    const incrementedTimestamp = timestamp + 10;
     await hre.network.provider.request({
         method: "evm_setNextBlockTimestamp",
         params: [incrementedTimestamp],
