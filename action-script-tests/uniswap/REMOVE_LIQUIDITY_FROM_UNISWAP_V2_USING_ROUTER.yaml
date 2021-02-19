@@ -1,0 +1,190 @@
+name: REMOVE_LIQUIDITY_FROM_UNISWAP_V2_USING_ROUTER
+blockNumber: 11885557
+tests:
+  - name: Remove liquidity from Uniswap pairs, burning LP tokens and receiving USDC and Dai
+    success: true
+    variables:
+      tokenAAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+      tokenBAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      liquidityAmount: "1000000000000000"
+      amountBMin: "1000000000000000000000"
+      amountAMin: "1000000000"
+      liquidityTokenAddress: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+    results:
+      receivedAmountA: "1097000264"
+      receivedAmountB: "1096165138390315938540"
+    events:
+      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "1000000000000000"
+      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+          value: "1000000000000000"
+      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+        name: Transfer
+        args:
+          from: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+          to: "0x0000000000000000000000000000000000000000"
+          value: "1000000000000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+          to: wallet
+          value: "1096165138390315938540"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+          to: wallet
+          value: "1097000264"
+      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+        name: Sync
+        args:
+          reserve0: "11423944869596071866098655"
+          reserve1: "11432648335935"
+      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+        name: Burn
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0: "1096165138390315938540"
+          amount1: "1097000264"
+          to: wallet
+  - name: Remove liquidity from Uniswap pairs, burning LP tokens and receiving USDC and ETH
+    success: true
+    variables:
+      tokenAAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+      tokenBAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+      liquidityAmount: "1000000000000000"
+      amountAMin: "60000000000"
+      amountBMin: "30000000000000000000"
+      liquidityTokenAddress: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+    results:
+      receivedAmountA: "61397683353"
+      receivedAmountB: "32207544514898956783"
+    events:
+      - address: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "1000000000000000"
+      - address: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+          value: "1000000000000000"
+      - address: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+        name: Transfer
+        args:
+          from: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+          to: "0x0000000000000000000000000000000000000000"
+          value: "1000000000000000"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+          to: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "61397683353"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Transfer
+        args:
+          from: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+          to: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "32207544514898956783"
+      - address: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+        name: Sync
+        args:
+          reserve0: "179305606706129"
+          reserve1: "94058814508556529256039"
+      - address: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+        name: Burn
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0: "61397683353"
+          amount1: "32207544514898956783"
+          to: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          to: wallet
+          value: "61397683353"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Withdrawal
+        args:
+          src: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          wad: "32207544514898956783"
+  - name: Remove liquidity from Uniswap pairs, burning LP tokens and receiving ETH and Dai
+    success: true
+    variables:
+      tokenAAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+      tokenBAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      liquidityAmount: "1000000000000000000"
+      amountAMin: "29000000000000000"
+      amountBMin: "56000000000000000000"
+      liquidityTokenAddress: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+    results:
+      receivedAmountA: "29785209800996639"
+      receivedAmountB: "56779763897930791510"
+    events:
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "1000000000000000000"
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+          value: "1000000000000000000"
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Transfer
+        args:
+          from: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+          to: "0x0000000000000000000000000000000000000000"
+          value: "1000000000000000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+          to: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "56779763897930791510"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Transfer
+        args:
+          from: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+          to: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "29785209800996639"
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Sync
+        args:
+          reserve0: "79433488696808999793828987"
+          reserve1: "41668773584769565657602"
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Burn
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0: "56779763897930791510"
+          amount1: "29785209800996639"
+          to: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          to: wallet
+          value: "56779763897930791510"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Withdrawal
+        args:
+          src: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          wad: "29785209800996639"
