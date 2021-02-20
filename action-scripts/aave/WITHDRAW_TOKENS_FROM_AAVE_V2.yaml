@@ -1,4 +1,4 @@
-name: "WITHDRAW_FROM_AAVE_V2"
+name: "WITHDRAW_TOKENS_FROM_AAVE_V2"
 
 summary: "Redeem aTokens from Aave v2 and receive underlying tokens"
 

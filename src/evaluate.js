@@ -409,7 +409,7 @@ function parseLogIncludingAnonymous(log, abi) {
 }
 
 async function incrementFixedTime(timestamp) {
-    const incrementedTimestamp = timestamp + 10;
+    const incrementedTimestamp = timestamp + 1000;
     await hre.network.provider.request({
         method: "evm_setNextBlockTimestamp",
         params: [incrementedTimestamp],
@@ -720,7 +720,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                                 currentEvent = await parseLogIncludingAnonymous(log, proxyABI);
                             } else {
                                 console.error(
-                                    "ERROR: could not retrieve the contract ABI! Try setting the file manually."
+                                    `ERROR: could not retrieve the contract ABI for contract "${log.address}" — Try setting the file manually.`
                                 );
                                 process.exit(1);
                             }
