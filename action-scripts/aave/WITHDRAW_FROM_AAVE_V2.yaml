@@ -1,0 +1,36 @@
+name: "WITHDRAW_FROM_AAVE_V2"
+
+summary: "Redeem aTokens from Aave v2 and receive underlying tokens"
+
+variables:
+  aTokenAddress: address
+  aTokenAmount: uint256
+  receivedTokenAddress: address
+
+results:
+
+definitions:
+ - Contract aave 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9
+ - Token aTOKEN aTokenAddress
+ - Token TOKEN receivedTokenAddress
+ - Function withdrawFromAave aave withdraw(address,uint256,address) => uint256
+ - Contract gateway 0xDcD33426BA191383f1c9B431A342498fdac73488
+ - Function withdrawEtherFromAave gateway withdrawETH(uint256,address)
+
+inputs:
+ - aTOKEN: aTokenAmount
+
+actions:
+ - if:
+    condition: TOKEN is ETHER
+    then:
+       - aTOKEN approve gateway aTokenAmount
+       - gateway withdrawEtherFromAave aTokenAmount wallet
+    else:
+       - aTOKEN approve aave aTokenAmount
+       - aave withdrawFromAave TOKEN aTokenAmount wallet
+
+outputs:
+ - TOKEN: aTokenAmount
+
+description: "Withdraw ${aTokenAmount:TOKEN.decimals} ${TOKEN.symbol} using ${aTokenAmount:aTOKEN.decimals} ${aTOKEN.symbol}"

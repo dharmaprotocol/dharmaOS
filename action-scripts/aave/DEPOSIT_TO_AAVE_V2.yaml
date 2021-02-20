@@ -1,0 +1,39 @@
+name: "DEPOSIT_TO_AAVE_V2"
+
+summary: "Mint aTokens using Aave v2"
+
+variables:
+  suppliedTokenAddress: address
+  suppliedAmount: uint256
+  aTokenAddress: address
+  referralCode: uint16
+
+results:
+
+definitions:
+ - Contract aave 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9
+ - Token UNDERLYING suppliedTokenAddress
+ - Token aTOKEN aTokenAddress
+ - Function depositToAave aave deposit(address,uint256,address,uint16)
+ - Contract gateway 0xDcD33426BA191383f1c9B431A342498fdac73488
+ - Token aETH 0x030bA81f1c18d280636F32af80b9AAd02Cf0854e
+ - Function depositEtherToAave gateway depositETH(address,uint16):payable
+
+inputs:
+ - UNDERLYING: suppliedAmount
+
+actions:
+ - if:
+    condition: UNDERLYING is ETHER
+    then:
+       - gateway depositEtherToAave:suppliedAmount wallet referralCode
+    else:
+       - UNDERLYING approve aave suppliedAmount
+       - aave depositToAave UNDERLYING suppliedAmount wallet referralCode
+
+operations:
+
+outputs:
+ - aTOKEN: suppliedAmount
+
+description: "Mint ${suppliedAmount:aTOKEN.decimals} ${aTOKEN.symbol} using ${suppliedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol}"

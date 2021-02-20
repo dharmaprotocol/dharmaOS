@@ -1,0 +1,136 @@
+name: DEPOSIT_TO_AAVE_V2
+blockNumber: 11891724
+tests:
+  - name: Mint aDAI using Dai on Aave v2
+    success: true
+    variables:
+      aTokenAddress: "0x028171bCA77440897B824Ca71D1c56caC55b68A3"
+      suppliedTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      suppliedAmount: "1000000000000000000"
+      referralCode: "1234"
+    results: {}
+    events:
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+          value: "1000000000000000000"
+      - address: "0x028171bCA77440897B824Ca71D1c56caC55b68A3"
+        name: Transfer
+        args:
+          from: "0x0000000000000000000000000000000000000000"
+          to: "0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c"
+          value: "57346561848789966314"
+      - address: "0x028171bCA77440897B824Ca71D1c56caC55b68A3"
+        name: Mint
+        args:
+          from: "0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c"
+          value: "57346561848789966314"
+          index: "1020121350508014630868966344"
+      - address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        name: ReserveDataUpdated
+        args:
+          reserve: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+          liquidityRate: "80128597163281815430521025"
+          stableBorrowRate: "154766074672764114754046775"
+          variableBorrowRate: "104766074672764114754046775"
+          liquidityIndex: "1020121350508014630868966344"
+          variableBorrowIndex: "1034871711757575155560766091"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0x028171bCA77440897B824Ca71D1c56caC55b68A3"
+          value: "1000000000000000000"
+      - address: "0x028171bCA77440897B824Ca71D1c56caC55b68A3"
+        name: Transfer
+        args:
+          from: "0x0000000000000000000000000000000000000000"
+          to: wallet
+          value: "1000000000000000000"
+      - address: "0x028171bCA77440897B824Ca71D1c56caC55b68A3"
+        name: Mint
+        args:
+          from: wallet
+          value: "1000000000000000000"
+          index: "1020121350508014630868966344"
+      - address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        name: ReserveUsedAsCollateralEnabled
+        args:
+          reserve: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+          user: wallet
+      - address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        name: Deposit
+        args:
+          reserve: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+          user: wallet
+          onBehalfOf: wallet
+          amount: "1000000000000000000"
+          referral: 1234
+  - name: Mint aWETH using Eth on Aave v2
+    success: true
+    variables:
+      aTokenAddress: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+      suppliedTokenAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+      suppliedAmount: "1000000000000000000"
+      referralCode: "1234"
+    results: {}
+    events:
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Deposit
+        args:
+          dst: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          wad: "1000000000000000000"
+      - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+        name: Transfer
+        args:
+          from: "0x0000000000000000000000000000000000000000"
+          to: "0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c"
+          value: "4064883932035383"
+      - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+        name: Mint
+        args:
+          from: "0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c"
+          value: "4064883932035383"
+          index: "1006656048403807845405654817"
+      - address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        name: ReserveDataUpdated
+        args:
+          reserve: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+          liquidityRate: "2033128006182491682900523"
+          stableBorrowRate: "49907694057298568330860453"
+          variableBorrowRate: "15926155245838854664688362"
+          liquidityIndex: "1006656048403807845405654817"
+          variableBorrowIndex: "1003710530864165696268628961"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Transfer
+        args:
+          from: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          to: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+          value: "1000000000000000000"
+      - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+        name: Transfer
+        args:
+          from: "0x0000000000000000000000000000000000000000"
+          to: wallet
+          value: "1000000000000000000"
+      - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+        name: Mint
+        args:
+          from: wallet
+          value: "1000000000000000000"
+          index: "1006656048403807845405654817"
+      - address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        name: ReserveUsedAsCollateralEnabled
+        args:
+          reserve: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+          user: wallet
+      - address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        name: Deposit
+        args:
+          reserve: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+          user: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          onBehalfOf: wallet
+          amount: "1000000000000000000"
+          referral: 1234

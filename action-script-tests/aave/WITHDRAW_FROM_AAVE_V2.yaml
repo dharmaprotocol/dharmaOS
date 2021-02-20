@@ -1,0 +1,161 @@
+name: WITHDRAW_FROM_AAVE_V2
+blockNumber: 11891724
+tests:
+  - name: Redeem aUNI from Aave v2 and receive UNI
+    success: true
+    variables:
+      aTokenAddress: "0xB9D7CB55f463405CDfBe4E90a6D2Df01C2B92BF1"
+      receivedTokenAddress: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
+      aTokenAmount: "1000000000000000000"
+      referralCode: "1234"
+    results: {}
+    events:
+      - address: "0xB9D7CB55f463405CDfBe4E90a6D2Df01C2B92BF1"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+          value: "1000000000000000000"
+      - address: "0xB9D7CB55f463405CDfBe4E90a6D2Df01C2B92BF1"
+        name: Transfer
+        args:
+          from: "0x0000000000000000000000000000000000000000"
+          to: "0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c"
+          value: "25953114697404294"
+      - address: "0xB9D7CB55f463405CDfBe4E90a6D2Df01C2B92BF1"
+        name: Mint
+        args:
+          from: "0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c"
+          value: "25953114697404294"
+          index: "1000180406489641051444032473"
+      - address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        name: ReserveDataUpdated
+        args:
+          reserve: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
+          liquidityRate: "648510885998009778409996"
+          stableBorrowRate: "19250586937564680995533533"
+          variableBorrowRate: "11229509046912730580727893"
+          liquidityIndex: "1000180406489641051444032473"
+          variableBorrowIndex: "1002137610449169105539650513"
+      - address: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
+        name: Transfer
+        args:
+          from: "0xB9D7CB55f463405CDfBe4E90a6D2Df01C2B92BF1"
+          to: wallet
+          value: "1000000000000000000"
+      - address: "0xB9D7CB55f463405CDfBe4E90a6D2Df01C2B92BF1"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0x0000000000000000000000000000000000000000"
+          value: "1000000000000000000"
+      - address: "0xB9D7CB55f463405CDfBe4E90a6D2Df01C2B92BF1"
+        name: Burn
+        args:
+          from: wallet
+          target: wallet
+          value: "1000000000000000000"
+          index: "1000180406489641051444032473"
+      - address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        name: Withdraw
+        args:
+          reserve: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
+          user: wallet
+          to: wallet
+          amount: "1000000000000000000"
+  - name: Redeem aWETH from Aave v2 and receive ETH
+    success: true
+    variables:
+      aTokenAddress: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+      receivedTokenAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+      aTokenAmount: "1000000000000000000"
+      referralCode: "1234"
+    results: {}
+    events:
+      - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          value: "1000000000000000000"
+      - address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        name: ReserveUsedAsCollateralEnabled
+        args:
+          reserve: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+          user: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+      - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+        name: BalanceTransfer
+        args:
+          from: wallet
+          to: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          value: "1000000000000000000"
+          index: "1006656113303376370105826935"
+      - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          value: "0"
+      - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          value: "1000000000000000000"
+      - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+        name: Transfer
+        args:
+          from: "0x0000000000000000000000000000000000000000"
+          to: "0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c"
+          value: "5586744243242066"
+      - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+        name: Mint
+        args:
+          from: "0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c"
+          value: "5586744243242066"
+          index: "1006656113303376370105826935"
+      - address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        name: ReserveDataUpdated
+        args:
+          reserve: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+          liquidityRate: "2033166028806838254080477"
+          stableBorrowRate: "49907891063836512123329503"
+          variableBorrowRate: "15926312851069209698663602"
+          liquidityIndex: "1006656113303376370105826935"
+          variableBorrowIndex: "1003711037754970925909760250"
+      - address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        name: ReserveUsedAsCollateralDisabled
+        args:
+          reserve: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+          user: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Transfer
+        args:
+          from: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+          to: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          value: "1000000000000000000"
+      - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+        name: Transfer
+        args:
+          from: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          to: "0x0000000000000000000000000000000000000000"
+          value: "1000000000000000000"
+      - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
+        name: Burn
+        args:
+          from: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          target: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          value: "1000000000000000000"
+          index: "1006656113303376370105826935"
+      - address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        name: Withdraw
+        args:
+          reserve: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+          user: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          to: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          amount: "1000000000000000000"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Withdrawal
+        args:
+          src: "0xDcD33426BA191383f1c9B431A342498fdac73488"
+          wad: "1000000000000000000"
