@@ -105,7 +105,7 @@ const createSinglePassingTestAndWrite = async ({
     console.log(testYAML);
 
     await writeTestToFile(actionScriptName, testYAML, category);
-    console.log(`Created test: ${category}/${actionScriptName}.yaml`);
+    console.log(`Created test: action-script-tests/${category}/${actionScriptName}.yaml`);
 
     process.exit(0);
 };

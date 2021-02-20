@@ -1,4 +1,4 @@
-name: "DEPOSIT_TO_AAVE_V2"
+name: "DEPOSIT_TOKENS_TO_AAVE_V2"
 
 summary: "Mint aTokens using Aave v2"
 
