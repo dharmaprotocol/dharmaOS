@@ -8,7 +8,8 @@ tests:
       receivedTokenAddress: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
       aTokenAmount: "1000000000000000000"
       referralCode: "1234"
-    results: {}
+    results:
+      receivedTokenAmount: "1000000000000000000"
     events:
       - address: "0xB9D7CB55f463405CDfBe4E90a6D2Df01C2B92BF1"
         name: Approval
@@ -70,7 +71,8 @@ tests:
       receivedTokenAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
       aTokenAmount: "1000000000000000000"
       referralCode: "1234"
-    results: {}
+    results:
+      receivedTokenAmount: "1000000000000000000"
     events:
       - address: "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e"
         name: Approval
