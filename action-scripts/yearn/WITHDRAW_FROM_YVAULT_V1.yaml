@@ -14,14 +14,22 @@ definitions:
  - Token UNDERLYING receivedTokenAddress
  - Token yVAULT yVaultAddress
  - Function redeemYVault yVAULT withdraw(uint256)
+ - Contract YWETH_WITHDRAWER 0x8f7a8E3542ecd4CB920C1Ed182713b6344D3a333
+ - Function WITHDRAW_YWETH YWETH_WITHDRAWER withdraw(address,uint256) => uint256
 
 inputs:
  - yVAULT: yVaultAmount
 
 actions:
- - UNDERLYING balanceOf wallet => initialReceivedAmount
- - yVAULT redeemYVault yVaultAmount
- - UNDERLYING balanceOf wallet => finalReceivedAmount
+ - if:
+    condition: UNDERLYING is ETHER
+    then:
+       - yVAULT approve YWETH_WITHDRAWER yVaultAmount
+       - YWETH_WITHDRAWER WITHDRAW_YWETH wallet yVaultAmount => receivedAmount
+    else:
+       - UNDERLYING balanceOf wallet => initialReceivedAmount
+       - yVAULT redeemYVault yVaultAmount
+       - UNDERLYING balanceOf wallet => finalReceivedAmount
 
 operations:
  - finalReceivedAmount - initialReceivedAmount => receivedAmount
