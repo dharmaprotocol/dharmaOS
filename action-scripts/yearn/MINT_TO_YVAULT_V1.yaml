@@ -14,23 +14,22 @@ definitions:
  - Token UNDERLYING suppliedTokenAddress
  - Token yVAULT yVaultAddress
  - Function mintYVault yVAULT deposit(uint256)
- - Token WETH 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
- - Function wrap WETH deposit():payable
+ - Contract yWETH_DEPOSITOR 0x74E36FC9035F9d5e40e109bcDee21a7491e557Da
+ - Function mintYWETH yWETH_DEPOSITOR deposit(address):payable => uint256
 
 inputs:
  - UNDERLYING: suppliedAmount
 
 actions:
- - yVAULT balanceOf wallet => yVaultInitialAmount
  - if:
     condition: UNDERLYING is ETHER
     then:
-       - WETH wrap:suppliedAmount
-       - WETH approve yVAULT suppliedAmount
+       - yWETH_DEPOSITOR mintYWETH:suppliedAmount wallet => yVaultReceivedAmount
     else:
+       - yVAULT balanceOf wallet => yVaultInitialAmount
        - UNDERLYING approve yVAULT suppliedAmount
- - yVAULT mintYVault suppliedAmount
- - yVAULT balanceOf wallet => yVaultFinalAmount
+       - yVAULT mintYVault suppliedAmount
+       - yVAULT balanceOf wallet => yVaultFinalAmount
 
 operations:
  - yVaultFinalAmount - yVaultInitialAmount => yVaultReceivedAmount

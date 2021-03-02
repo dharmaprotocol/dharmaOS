@@ -1,57 +1,62 @@
 name: MINT_TO_YVAULT_V1
-blockNumber: 11837716
+blockNumber: 11960341
 tests:
-  - name: "Mint yTokens using yearn V1"
+  - name: "Mint yDai with Dai using yearn V1"
     success: true
     variables:
       suppliedTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
       suppliedAmount: "1000000000000000000"
       yVaultAddress: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
     results:
-      yVaultReceivedAmount: "899738886661893444"
+      yVaultReceivedAmount: "891551785318168519"
     events:
       - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
         name: Approval
         args:
-          owner: "wallet"
+          owner: wallet
           spender: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
           value: "1000000000000000000"
       - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
         name: Transfer
         args:
-          from: "wallet"
+          from: wallet
           to: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
           value: "1000000000000000000"
       - address: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
         name: Transfer
         args:
           from: "0x0000000000000000000000000000000000000000"
-          to: "wallet"
-          value: "899738886661893444"
-  - name: "Mint yWETH using ETH via yearn V1"
+          to: wallet
+          value: "891551785318168519"
+  - name: "Mint yETH with ETH using yearn V1"
     success: true
     variables:
-      suppliedTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      suppliedTokenAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
       suppliedAmount: "1000000000000000000"
-      yVaultAddress: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
+      yVaultAddress: "0xe1237aA7f535b0CC33Fd973D66cBf830354D16c7"
     results:
-      yVaultReceivedAmount: "899738886661893444"
+      yVaultReceivedAmount: "986254066357557927"
     events:
-      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
-        name: Approval
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Deposit
         args:
-          owner: "wallet"
-          spender: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
-          value: "1000000000000000000"
-      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+          dst: "0x74E36FC9035F9d5e40e109bcDee21a7491e557Da"
+          wad: "1000000000000000000"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
         name: Transfer
         args:
-          from: "wallet"
-          to: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
+          from: "0x74E36FC9035F9d5e40e109bcDee21a7491e557Da"
+          to: "0xe1237aA7f535b0CC33Fd973D66cBf830354D16c7"
           value: "1000000000000000000"
-      - address: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
+      - address: "0xe1237aA7f535b0CC33Fd973D66cBf830354D16c7"
         name: Transfer
         args:
           from: "0x0000000000000000000000000000000000000000"
-          to: "wallet"
-          value: "899738886661893444"
+          to: "0x74E36FC9035F9d5e40e109bcDee21a7491e557Da"
+          value: "986254066357557927"
+      - address: "0xe1237aA7f535b0CC33Fd973D66cBf830354D16c7"
+        name: Transfer
+        args:
+          from: "0x74E36FC9035F9d5e40e109bcDee21a7491e557Da"
+          to: wallet
+          value: "986254066357557927"
