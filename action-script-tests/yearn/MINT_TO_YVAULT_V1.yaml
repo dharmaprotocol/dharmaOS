@@ -1,8 +1,34 @@
 name: MINT_TO_YVAULT_V1
 blockNumber: 11837716
 tests:
-  - name: "Mint yTokens using yearn V1 (warning: yearn v1 has been exploited
-      recently!)"
+  - name: "Mint yTokens using yearn V1"
+    success: true
+    variables:
+      suppliedTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      suppliedAmount: "1000000000000000000"
+      yVaultAddress: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
+    results:
+      yVaultReceivedAmount: "899738886661893444"
+    events:
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Approval
+        args:
+          owner: "wallet"
+          spender: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
+          value: "1000000000000000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "wallet"
+          to: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
+          value: "1000000000000000000"
+      - address: "0xACd43E627e64355f1861cEC6d3a6688B31a6F952"
+        name: Transfer
+        args:
+          from: "0x0000000000000000000000000000000000000000"
+          to: "wallet"
+          value: "899738886661893444"
+  - name: "Mint yWETH using ETH via yearn V1"
     success: true
     variables:
       suppliedTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
