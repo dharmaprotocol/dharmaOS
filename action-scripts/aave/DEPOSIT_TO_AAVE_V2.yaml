@@ -9,6 +9,7 @@ variables:
   referralCode: uint16
 
 results:
+  aTokenReceivedAmount: uint256
 
 definitions:
  - Contract aave 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9
@@ -32,8 +33,9 @@ actions:
        - aave depositToAave UNDERLYING suppliedAmount wallet referralCode
 
 operations:
+ - suppliedAmount + 0 => aTokenReceivedAmount
 
 outputs:
- - aTOKEN: suppliedAmount
+ - aTOKEN: aTokenReceivedAmount
 
-description: "Mint ${suppliedAmount:aTOKEN.decimals} ${aTOKEN.symbol} using ${suppliedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol}"
+description: "Mint ${aTokenReceivedAmount:aTOKEN.decimals} ${aTOKEN.symbol} using ${suppliedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol}"

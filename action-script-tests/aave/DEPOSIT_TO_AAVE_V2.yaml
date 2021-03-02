@@ -8,7 +8,8 @@ tests:
       suppliedTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
       suppliedAmount: "1000000000000000000"
       referralCode: "1234"
-    results: {}
+    results:
+      aTokenReceivedAmount: "1000000000000000000"
     events:
       - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
         name: Approval
@@ -75,7 +76,8 @@ tests:
       suppliedTokenAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
       suppliedAmount: "1000000000000000000"
       referralCode: "1234"
-    results: {}
+    results:
+      aTokenReceivedAmount: "1000000000000000000"
     events:
       - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
         name: Deposit

@@ -668,6 +668,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
         callABIs: encoder.callABIs,
         resultToParse: encoder.resultToParse,
         contract: wallet,
+        variables,
     };
 
     const resultsParser = new ResultsParser(parserArgs);

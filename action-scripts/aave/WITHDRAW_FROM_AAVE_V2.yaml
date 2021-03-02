@@ -8,6 +8,7 @@ variables:
   receivedTokenAddress: address
 
 results:
+  receivedTokenAmount: uint256
 
 definitions:
  - Contract aave 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9
@@ -30,7 +31,10 @@ actions:
        - aTOKEN approve aave aTokenAmount
        - aave withdrawFromAave TOKEN aTokenAmount wallet
 
-outputs:
- - TOKEN: aTokenAmount
+operations:
+ - aTokenAmount + 0 => receivedTokenAmount
 
-description: "Withdraw ${aTokenAmount:TOKEN.decimals} ${TOKEN.symbol} using ${aTokenAmount:aTOKEN.decimals} ${aTOKEN.symbol}"
+outputs:
+ - TOKEN: receivedTokenAmount
+
+description: "Withdraw ${receivedTokenAmount:TOKEN.decimals} ${TOKEN.symbol} using ${aTokenAmount:aTOKEN.decimals} ${aTOKEN.symbol}"
