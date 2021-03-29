@@ -1,6 +1,39 @@
-# action-scripts
-A collection of "Action Scripts" for execution via the Dharma Smart Wallet.
+# 🔌 dharmaOS
+**dharmaOS** is an open SDK that allows developers to connect any EVM protocol action to Dharma's high-grade fiat
+on and off ramps.  The **dharmaOS** system ingests simple YAML files called "action scripts" that can be either manually or programmatically generated.
 
+These files specify a sequence of Ethereum function calls and necessary metadata to bridge the raw inputs and outputs of those transactions to a user-friendly interface with proper semantic context.
+
+Given a properly-formatted "action script":
+- The Dharma app automatically generates a UI for the action
+- If the "action" either ingests or spits out USDC as an input or output, gives users the capability to execute the action directly from / to their bank account
+- Actions can similarly ingest tokens that are in escrow "lock up" in the app, and tokens outputted by the action will inherit the input tokens' escrow period.
+
+**dharmaOS** is currently in **invite-only alpha mode** — you can request an invite to the SDK [here](https://dharma-feedback.typeform.com/to/cWofOmkP).
+Throughout Q2 of 2021, our goal is to open up self-service access to **dharmaOS** to the general public — replicating an experience akin to the Apple App Store, but housed in a Coinbase-like crypto wallet. 
+
+# 🏦 The Problem With Fiat On-Ramps in Web3
+In order to understand **dharmaOS**, it's important to understand the secret sauce behind Dharma's onramp.  In crypto-land,
+fiat on and off ramps have historically fallen into two categories – fiat exchanges (e.g. Coinbase) and drop-in APIs (e.g. Wyre / MoonPay / etc.).
+
+The former tend to be cheap and high-volume supporting, but very incompatible with web3 wallets — a typical purchase of ETH / USDC can take up to a week to be withdrawable to a web3-compatible wallet.
+
+The latter provide instant settlement to web3 wallets, but tend to have unworkably low limits (e.g. $500 / week) and egregiously high fees due to reliance on debit card networks.
+
+The fundamental constraining factor that drives these tradeoffs is fraud risk — the entire game of being a fiat-to-crypto onramp is one of underwriting the risk that a user is fraudulently using a stolen debit card / bank account to steal crypto from you.  Fiat exchanges mitigate that risk by not letting you withdraw instantly.  Drop-in APIs mitigate that risk by only supporting expensive, instant-confirmation payments (e.g. cards) and having very low limits.  **In both cases, the web3-aspirational user suffers**.
+
+# 🥜 Dharma's Approach In A Nutshell
+Dharma is able to underwrite cheap, instant fiat-originated exposure to any protocol in Ethereum by recreating fiat-exchange escrow requirements in a non-custodial web3 context through smart contracts.
+
+When a user makes a $25k deposit into, say, Compound on Dharma, Dharma initiates a debit of their bank account (which can take several days to clear), but then instantly advances the user 25k in USDC on-chain and executes their desired action through **dharmaOS** (i.e. in this case, minting a cToken).
+
+The output tokens from this action (i.e. cUSDC) are defined in the corresponding action script, and are held in escrow for 5 days in a smart contract that gives Dharma the right to claw back the funds in the case of fraud.  After 5 days, the smart contract settles funds to the user's smart wallet, and the funds become non-custodial.
+
+An honest user is not exposed to this process because the Dharma wallet displays escrowed balances as inlined with non-custodial balances.
+
+Tokens in a user's wallet that are in escrow aren't frozen artifacts — they can be used as input tokens in any approved action script in **dharmaOS**.  For instance, a user can buy $25k of Ether, and then immediately deposit that Ether (which would then be "under lockup") into a staking protocol like Lido, or bid that Ether on an NFT in Foundation / Zora / OpenSea / etc.
+
+The goal for **dharmaOS** is to expand the inventory of supported "actions" a user can take from their bank account / escrowed balances to *everything* in Ethereum — and to eventually expose the triggering of fiat-enabled actions to contexts outside of the Dharma app (i.e. in dApps via WalletConnect)
 ## Usage
 1. set up `.env` file:
 ```
