@@ -23,4 +23,4 @@ outputs:
 
 associations:
 
-description: "Commit ${suppliedFGEN:TOKEN.decimals} FGEN to convert to cFGEN, redeemable for TRIBE, upon completion of the Fei genesis event"
+description: "Commit ${suppliedFGEN:GenesisGroup.decimals} FGEN to convert to cFGEN, redeemable for TRIBE, upon completion of the Fei genesis event"
