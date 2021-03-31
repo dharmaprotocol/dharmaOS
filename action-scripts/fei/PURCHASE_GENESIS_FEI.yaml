@@ -28,4 +28,4 @@ outputs:
 
 associations:
 
-description: "Purchase ${receivedFGEN:TOKEN.decimals} FGEN, redeemable for genesis Fei, using ${suppliedEther:ETHER.decimals} Ether"
+description: "Purchase ${receivedFGEN:GenesisGroup.decimals} FGEN, redeemable for genesis Fei, using ${suppliedEther:ETHER.decimals} Ether"
