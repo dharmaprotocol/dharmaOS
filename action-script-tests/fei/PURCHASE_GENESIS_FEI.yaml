@@ -1,0 +1,21 @@
+name: PURCHASE_GENESIS_FEI
+blockNumber: 12149020
+tests:
+  - name: Purchase Fei in genesis event using Ether
+    success: true
+    variables:
+      suppliedEther: "1000000000000000000"
+    results:
+      receivedFGEN: "1000000000000000000"
+    events:
+      - address: "0xBFfB152b9392e38CdDc275D818a3Db7FE364596b"
+        name: Transfer
+        args:
+          from: "0x0000000000000000000000000000000000000000"
+          to: wallet
+          value: "1000000000000000000"
+      - address: "0xBFfB152b9392e38CdDc275D818a3Db7FE364596b"
+        name: Purchase
+        args:
+          _to: wallet
+          _value: "1000000000000000000"

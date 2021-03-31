@@ -1,0 +1,26 @@
+name: "CONVERT_GENESIS_FEI_TO_TRIBE"
+
+summary: "Commit Genesis Fei to convert to Tribe upon completion of the Fei genesis event"
+
+variables:
+  suppliedFGEN: uint256
+
+results:
+
+definitions:
+ - Token GenesisGroup 0xBFfB152b9392e38CdDc275D818a3Db7FE364596b
+ - Function commit GenesisGroup commit(address,address,uint256)
+
+inputs:
+ - GenesisGroup: suppliedFGEN
+
+actions:
+ - GenesisGroup commit wallet wallet suppliedFGEN
+
+operations:
+
+outputs:
+
+associations:
+
+description: "Commit ${suppliedFGEN:TOKEN.decimals} FGEN to convert to cFGEN, redeemable for TRIBE, upon completion of the Fei genesis event"
