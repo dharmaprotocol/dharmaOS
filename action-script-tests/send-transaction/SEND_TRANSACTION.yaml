@@ -1,0 +1,18 @@
+name: SEND_TRANSACTION
+blockNumber: 12182367
+tests:
+  - name: Send transaction
+    success: true
+    variables:
+      to: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B"
+      value: "0"
+      data: "0xc299823800000000000000000000000000000000000000000000000000000000000000\
+        20000000000000000000000000000000000000000000000000000000000000000100000\
+        000000000000000000035a18000230da775cac24873d00ff85bccded550"
+    results: {}
+    events:
+      - address: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B"
+        name: MarketEntered
+        args:
+          cToken: "0x35A18000230DA775CAc24873d00Ff85BccdeD550"
+          account: wallet
