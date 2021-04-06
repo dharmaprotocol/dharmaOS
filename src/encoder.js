@@ -554,10 +554,12 @@ class Encoder {
 
                     this.resultToParse[this.callIndex][resultIndex] = result;
 
-                    this.knownCallResultVariables[result] = {
-                        callIndex: this.callIndex,
-                        returndata: this.callResultsByFunction[functionName][resultIndex],
-                    };
+                    if (this.isAdvanced) {
+                        this.knownCallResultVariables[result] = {
+                            callIndex: this.callIndex,
+                            returndata: this.callResultsByFunction[functionName][resultIndex],
+                        };
+                    }
                 }
             }
 
