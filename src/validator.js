@@ -37,6 +37,8 @@ class Validator {
         string: (x) => x && (typeof x === "string" || x instanceof String),
         array: (x) => x && Array.isArray(x) && typeof x === "object",
         object: (x) => x && !Array.isArray(x) && typeof x === "object",
+        conditionalObject: (x) => x && !Array.isArray(x) && typeof x === "object" && "if" in x,
+        rawObject: (x) => x && !Array.isArray(x) && typeof x === "object" && "raw" in x,
     };
 
     static VALID_VARIABLE_TYPES = new Set([
@@ -47,6 +49,7 @@ class Validator {
         "uint8",
         "uint16",
         "int128",
+        "bytes"
     ]);
 
     static INPUT_SELECTORS = new Set([
@@ -84,6 +87,12 @@ class Validator {
         else: "array",
     };
 
+    static RAW_FIELDS_AND_TYPES = {
+        to: "address",
+        value: "uint256",
+        data: "bytes",
+    };
+
     // Note: name, summary, actions and description are all required!
     static TOP_LEVEL_DEFAULTS = {
         variables: {},
@@ -96,6 +105,8 @@ class Validator {
     };
 
     static RESERVED_KEYWORDS = new Set(["wallet", "ETHER"]);
+
+    static RESERVED_ACTION_SCRIPT_NAMES = { SEND_TRANSACTION: "SEND_TRANSACTION" };
 
     getFilePaths(dir) {
         const dirents = fs.readdirSync(dir, { withFileTypes: true });
@@ -660,7 +671,7 @@ class Validator {
         const { name } = actionScript;
         if (
             Object.keys(action).length !== 1 ||
-            Object.keys(action)[0] !== 'if'
+            (Object.keys(action)[0] !== 'if' && Object.keys(action)[0] !== 'raw')
         ) {
             throw new Error(
                 `Action script "${name}" action #${parseInt(index) + 1} supplies an object that is not a conditional (key: "if")`
@@ -739,18 +750,53 @@ class Validator {
         return [hasAdvanced, callResultVariables];
     }
 
+    static validateRawAction(action, index, actionScript) {
+        const { name } = actionScript;
+
+        if (name !== Validator.RESERVED_ACTION_SCRIPT_NAMES.SEND_TRANSACTION) {
+            throw new Error(
+                `Action script "${name}" is not allowed to define a raw object`
+            );
+        }
+
+        if (
+            Object.keys(action).length !== 1 || Object.keys(action)[0] !== 'raw'
+        ) {
+            throw new Error(
+                `Action script "${name}" action #${parseInt(index) + 1} supplies an object that is not a raw (key: "raw")`
+            );
+        }
+
+        const validFields = new Set(
+            Object.keys(Validator.RAW_FIELDS_AND_TYPES)
+        );
+        for (let field of Object.keys(action.raw)) {
+            if (!validFields.has(field)) {
+                throw new Error(
+                    `Action script "${name}" raw value (action #${parseInt(index) + 1}) contains invalid field "${field}"`
+                );
+            }
+        }
+    }
+
     static validateActions(actionScript) {
         const { actions } = actionScript;
         let isAdvanced = false;
         let callResultVariables = new Set();
         for (let [index, action] of Object.entries(actions)) {
             let hasAdvanced;
-            if (Validator.TYPE_CHECKERS.object(action)) {
+            if (Validator.TYPE_CHECKERS.conditionalObject(action)) {
                 [hasAdvanced, callResultVariables] = Validator.validateConditionalAction(
                     action,
                     index,
                     actionScript,
                     callResultVariables
+                )
+            } else if (Validator.TYPE_CHECKERS.rawObject(action)) {
+                Validator.validateRawAction(
+                    action,
+                    index,
+                    actionScript
                 )
             } else {
                 [hasAdvanced, callResultVariables] = Validator.validateAction(
@@ -864,7 +910,7 @@ class Validator {
         // Determine each action that is a conditional
         const conditionalActions = [];
         for (let [i, action] of Object.entries(actions)) {
-            if (Validator.TYPE_CHECKERS.object(action)) {
+            if (Validator.TYPE_CHECKERS.conditionalObject(action)) {
                 conditionalActions.push(i);
             }
         }
@@ -916,7 +962,7 @@ class Validator {
                         delete inputTokens[replacementInputToken];
                         inputTokens[inputTokenToReplace] = inputValuesToReplace;
                     }
-                } else {
+                } else if (!Validator.TYPE_CHECKERS.rawObject(action)) {
                     inputTokens = Validator.validateInput(action, actionScript, {...inputTokens});
                 }
             }

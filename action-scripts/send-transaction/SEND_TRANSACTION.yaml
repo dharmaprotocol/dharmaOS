@@ -1,0 +1,16 @@
+name: "SEND_TRANSACTION"
+
+summary: "Send transaction"
+
+variables:
+  to: address
+  value: uint256
+  data: bytes
+
+actions:
+ - raw:
+    to: to
+    value: value
+    data: data
+
+description: "Send transaction"

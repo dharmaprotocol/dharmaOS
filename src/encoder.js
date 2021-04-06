@@ -357,6 +357,18 @@ class Encoder {
             for (let conditionalAction of conditionalActions) {
                 this.constructCallAndResultFormat(conditionalAction);
             }
+        } else if (typeof action === 'object' && 'raw' in action) {
+            const { to: toVariable, value: valueVariable, data: dataVariable } = action.raw;
+
+            const to = this.variables[toVariable];
+            const value = this.variables[valueVariable];
+            const data = this.variables[dataVariable];
+
+            this.calls.push({
+                to,
+                value,
+                data,
+            });
         } else {
             const appliedArgs = [];
 
