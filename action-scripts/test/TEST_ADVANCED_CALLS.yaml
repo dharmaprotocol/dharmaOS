@@ -1,0 +1,33 @@
+name: "TEST_ADVANCED_CALLS"
+
+summary: "Test advanced calls"
+
+variables:
+  one: uint256
+
+results:
+  two: uint256
+  four: uint256
+  eight: uint256
+
+definitions:
+ - Contract ADDER 0xF0f74ec3AC73b416A9f1244e0e6D2b59c172fc54
+ - Function add ADDER add(uint256,uint256) => uint256
+ - Function addWithValue ADDER addWithValue(uint256):payable => uint256
+
+inputs:
+ - ETHER: two
+
+actions:
+ - ADDER add one one => two
+ - ADDER addWithValue:two two => four
+ - ADDER add four four => eight
+
+operations:
+
+outputs:
+ - ETHER: number
+
+associations:
+
+description: "Test advanced calls: ${two} + ${two} = ${four}"

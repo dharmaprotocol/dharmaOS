@@ -1,0 +1,30 @@
+name: TEST_ADVANCED_CALLS
+blockNumber: 12187425
+tests:
+  - name: Test advanced calls
+    success: true
+    variables:
+      one: "1"
+    results:
+      two: "2"
+      four: "4"
+      eight: "8"
+    events:
+      - address: "0xF0f74ec3AC73b416A9f1244e0e6D2b59c172fc54"
+        name: Add
+        args:
+          a: "1"
+          b: "1"
+          c: "2"
+      - address: "0xF0f74ec3AC73b416A9f1244e0e6D2b59c172fc54"
+        name: AddWithValue
+        args:
+          a: "2"
+          b: "2"
+          c: "4"
+      - address: "0xF0f74ec3AC73b416A9f1244e0e6D2b59c172fc54"
+        name: Add
+        args:
+          a: "4"
+          b: "4"
+          c: "8"

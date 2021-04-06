@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.1;
+pragma solidity 0.8.3;
 
 
 interface WalletInterface {
@@ -270,8 +270,8 @@ contract Wallet is WalletInterface {
   }
 
   function _executeAdvanced(
-    AdvancedCall[] calldata calls
-  ) external returns (AdvancedCallReturn[] memory callResults) {
+    AdvancedCall[] memory calls
+  ) public returns (AdvancedCallReturn[] memory callResults) {
     // Ensure caller is this contract and self-call context is correctly set.
     _enforceSelfCallFrom(this.executeAdvanced.selector);
 
@@ -314,11 +314,6 @@ contract Wallet is WalletInterface {
           revert("bad valueLength");
         }
 
-        // Note: this check could be performed prior to execution.
-        if (calls[callIndex].data.length < returnOffset + valueLength) {
-          revert("Calldata too short to insert returndata at supplied offset.");
-        }
-
         if (returnData.length < returnOffset + valueLength) {
           revert("Return values are too short to give back a value at supplied index.");
         }
@@ -327,7 +322,7 @@ contract Wallet is WalletInterface {
         uint256 valueOffset = 32 - valueLength;
         assembly {
           returndatacopy(
-            add(add(callTarget, 64), valueOffset), returnOffset, valueLength
+            add(add(callTarget, 32), valueOffset), returnOffset, valueLength
           )
         }
       }
@@ -479,8 +474,8 @@ contract Wallet is WalletInterface {
   }
 
   function _simulateAdvanced(
-    AdvancedCall[] calldata calls
-  ) external returns (AdvancedCallReturn[] memory callResults) {
+    AdvancedCall[] memory calls
+  ) public returns (AdvancedCallReturn[] memory callResults) {
     // Ensure caller is this contract and self-call context is correctly set.
     _enforceSelfCallFrom(this.simulateAdvanced.selector);
 
@@ -521,11 +516,6 @@ contract Wallet is WalletInterface {
           revert("bad valueLength");
         }
 
-        // Note: this check could be performed prior to execution.
-        if (calls[callIndex].data.length < returnOffset + valueLength) {
-          revert("Calldata too short to insert returndata at supplied offset.");
-        }
-
         if (returnData.length < returnOffset + valueLength) {
           revert("Return values are too short to give back a value at supplied index.");
         }
@@ -534,7 +524,7 @@ contract Wallet is WalletInterface {
         uint256 valueOffset = 32 - valueLength;
         assembly {
           returndatacopy(
-            add(add(callTarget, 64), valueOffset), returnOffset, valueLength
+            add(add(callTarget, 32), valueOffset), returnOffset, valueLength
           )
         }
       }
