@@ -28,20 +28,23 @@ class ResultsParser {
 
         let success;
         let rawResults;
-        let results;
         if (!this.script.isAdvanced) {
             const { ok, returnData } = this.callResults;
 
             success = ok.every((x) => x);
             rawResults = this.calls.map((x, i) => [x, ok[i], returnData[i]]);
-
-            results = await Promise.all(
-                rawResults.map(async (x, i) => this.parseCall(x, this.callABIs[i]))
-            );
         } else {
-            // TODO: parse based on AdvancedCallResults[]
-            throw new Error("Parsing advanced call results is not implemented yet!");
+            // parse based on AdvancedCallResults[]
+            const ok = this.callResults.map(callResult => callResult.ok);
+            const returnData = this.callResults.map(callResult => callResult.returnData);
+
+            success = ok.every((x) => x);
+            rawResults = this.calls.map((x, i) => [x, ok[i], returnData[i]]);
         }
+
+        const results = await Promise.all(
+            rawResults.map(async (x, i) => this.parseCall(x, this.callABIs[i]))
+        );
 
         let parsedResults = {};
 
