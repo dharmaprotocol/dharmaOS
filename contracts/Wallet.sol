@@ -299,7 +299,7 @@ contract Wallet is WalletInterface {
       }
 
       for (uint256 j = 0; j < a.replaceValue.length; j++) {
-        callIndex = uint256(a.replaceData[j].callIndex);
+        callIndex = uint256(a.replaceValue[j].callIndex);
 
         // Note: this check could be performed prior to execution.
         if (i >= callIndex) {
@@ -501,7 +501,7 @@ contract Wallet is WalletInterface {
       }
 
       for (uint256 j = 0; j < a.replaceValue.length; j++) {
-        callIndex = uint256(a.replaceData[j].callIndex);
+        callIndex = uint256(a.replaceValue[j].callIndex);
 
         // Note: this check could be performed prior to execution.
         if (i >= callIndex) {
