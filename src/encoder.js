@@ -391,6 +391,8 @@ class Encoder {
                         returndata,
                     } = this.knownCallResultVariables[payableArg];
 
+                    // TODO: check returndata type + size and ensure it's valid
+
                     this.calls[callIndex].replaceValue.push({
                         returnDataOffset: returndata.offset,
                         valueLength: returndata.size,
@@ -415,11 +417,37 @@ class Encoder {
                         returndata,
                     } = this.knownCallResultVariables[arg];
 
+                    const calldata = this.callArgumentsByFunction[functionName][argIndex];
+
+                    if (calldata.type !== returndata.type) {
+                        throw new Error(
+                            `arg "${
+                                arg
+                            }" calldata type "${
+                                calldata.type
+                            }" does not match returndata type "${
+                                returndata.type
+                            }"`
+                        );
+                    }
+
+                    if (calldata.size !== returndata.size) {
+                        throw new Error(
+                            `arg "${
+                                arg
+                            }" calldata size "${
+                                calldata.size
+                            }" does not match returndata size "${
+                                returndata.size
+                            }"`
+                        );
+                    }
+
                     this.calls[callIndex].replaceData.push({
                         returnDataOffset: returndata.offset,
                         dataLength: returndata.size,
                         callIndex: this.callIndex,
-                        callDataOffset: this.callArgumentsByFunction[functionName][argIndex],
+                        callDataOffset: calldata.offset,
                     });
 
                     appliedArgs.push(Encoder.typeZeroPaddings(returndata.type));
