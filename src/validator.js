@@ -15,7 +15,9 @@ class Validator {
     static async getActionScript(name) {
         const validator = new Validator();
         await validator.parseActionScripts();
-        return validator.getActionScriptAfterParsing(name);
+        const script = validator.getActionScriptAfterParsing(name);
+        const isAdvanced = validator.validateActionScript(script);
+        return {...script, isAdvanced};
     }
 
     getActionScriptAfterParsing(name) {
@@ -166,14 +168,15 @@ class Validator {
         this.actionScripts = relevantFilepaths.map(
             this.parseActionScriptByPath
         );
-    }
 
-    validateActionScripts() {
         const names = this.actionScripts.map((script) => script.name);
         this.namesSet = new Set(names);
         if (this.namesSet.size !== names.length) {
             throw new Error("All action scripts must have a unique name");
         }
+    }
+
+    validateActionScripts() {
         this.advancedScripts = new Set();
         for (const script of this.actionScripts) {
             const isAdvanced = this.validateActionScript(script);
