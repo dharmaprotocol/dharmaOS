@@ -300,6 +300,10 @@ class Encoder {
                     appliedArgs.push(appliedArg);
                 } else if (arg in this.targetContracts) {
                     appliedArgs.push(this.targetContracts[arg].address);
+                } else if (this.isAdvanced) {
+                    // TODO: determine if the arg in question is "advanced" —
+                    // if so, pad it with zeroes based on its type
+                    appliedArgs.push(0); // FIX: Obviously this is incorrect
                 } else {
                     appliedArgs.push(arg);
                 }
@@ -312,11 +316,15 @@ class Encoder {
             }
 
             if (contractName === "ETHER") {
-                this.calls.push({
-                    to: appliedArgs[0],
-                    value: appliedArgs[1],
-                    data: "0x",
-                });
+                if (!this.isAdvanced) {
+                    this.calls.push({
+                        to: appliedArgs[0],
+                        value: appliedArgs[1],
+                        data: "0x",
+                    });
+                } else {
+                    throw new Error("Unable to encode advanced calls yet!");
+                }
 
                 this.callABIs.push({
                     payable: true,
@@ -327,11 +335,15 @@ class Encoder {
                 const contract = this.contracts[contractName];
                 const to = contract.address;
 
-                this.calls.push({
-                    to,
-                    value: appliedPayableArg,
-                    data: "0x",
-                });
+                if (!this.isAdvanced) {
+                    this.calls.push({
+                        to,
+                        value: appliedPayableArg,
+                        data: "0x",
+                    });
+                } else {
+                    throw new Error("Unable to encode advanced calls yet!");
+                }
 
                 this.callABIs.push({
                     payable: true,
@@ -347,11 +359,15 @@ class Encoder {
                     appliedArgs
                 );
 
-                this.calls.push({
-                    to,
-                    value: appliedPayableArg,
-                    data,
-                });
+                if (!this.isAdvanced) {
+                    this.calls.push({
+                        to,
+                        value: appliedPayableArg,
+                        data,
+                    });
+                } else {
+                    throw new Error("Unable to encode advanced calls yet!");
+                }
 
                 const callABIIndex = this.targetContracts[contractName].abi
                     .map((f) => f.name)
@@ -391,6 +407,7 @@ class Encoder {
         this.calls = [];
         this.callABIs = [];
         this.resultToParse = {};
+        this.isAdvanced = script.isAdvanced;
 
         const { actions } = script;
 
