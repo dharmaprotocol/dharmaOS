@@ -228,6 +228,53 @@ const ERC20_ABI = [
 const ETHER_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
 class Encoder {
+    static typeSizes = (type) => {
+        if (!(typeof type === "string")) {
+            throw new Error("Types must be formatted as strings.");
+        }
+
+        if (type === "string" || type === "bytes") {
+            throw new Error("Cannot infer size of dynamically-sized types.");
+        }
+
+        if (type.includes("[")) {
+            throw new Error("Typed array types are not yet supported.");
+        }
+
+        if (type.includes("(")) {
+            throw new Error("Struct types are not yet supported.");
+        }
+
+        return 32;
+    }
+
+    static erc20CallArguments = Object.fromEntries([
+      ['transfer', ['address', 'uint256']],
+      ['transferFrom', ['address', 'address', 'uint256']],
+      ['approve', ['address', 'uint256']],
+      ['allowance', ['address', 'address']],
+      ['balanceOf', ['address']],
+      ['totalSupply', []]
+    ].map(([functionName, functionArguments]) => [
+        functionName,
+        functionArguments.map((type, i) => ({
+            type,
+            size: 32,
+            offset: 4 + 32 * i
+        }))
+    ]));
+
+    static erc20CallResults = Object.fromEntries([
+      'transfer', 'transferFrom', 'approve', 'allowance', 'balanceOf', 'totalSupply'
+    ].map(functionName => [
+        functionName,
+        [{
+            type: functionName.includes('l') ? 'uint256' : 'bool',
+            size: 32,
+            offset: 0
+        }]
+    ]));
+
     static async encode(actionScriptName, variables, wallet) {
         const encoder = new Encoder(actionScriptName, variables, wallet);
         await encoder.parseActionScriptDefinitions();
@@ -409,7 +456,90 @@ class Encoder {
         this.resultToParse = {};
         this.isAdvanced = script.isAdvanced;
 
-        const { actions } = script;
+        const { actions, definitions } = script;
+
+        this.callArgumentsByFunction = {};
+        this.callResultsByFunction = {};
+
+        if (this.isAdvanced) {
+            const getSizesAndOffsetsFromTypes = (types, includeSelector) => {
+                if (types.length === 0) {
+                    return [];
+                }
+
+                const sizes = types.map(
+                    Encoder.typeSizes
+                );
+
+                const extraOffset = includeSelector ? 4 : 0;
+                const offsets = sizes.map(
+                    (sum => value => sum += value)(-sizes[0] + extraOffset)
+                );
+
+                return types.map(
+                    (type, i) => ({
+                        type,
+                        size: sizes[i],
+                        offset: offsets[i],
+                    })
+                );
+            }
+
+            const definitionCallArguments = Object.fromEntries(
+                definitions
+                    .filter(definition => definition.startsWith("Function "))
+                    .map(definition => {
+                        const functionName = definition.split(' ')[1];
+                        const callArgumentTypes = definition.split(' ')[3] === 'fallback'
+                            ? []
+                            : definition
+                                .split(" => ")[0]
+                                .replace(":payable", "")
+                                .split("(")[1]
+                                .slice(0, -1)
+                                .split(",")
+                                .filter(x => x)
+                                .map(x => x.trim(" "));
+
+                        return [
+                            functionName,
+                            getSizesAndOffsetsFromTypes(
+                                callArgumentTypes,
+                                true
+                            )
+                        ];
+                    })
+            );
+
+            this.callArgumentsByFunction = {
+                ...definitionCallArguments,
+                ...Encoder.erc20CallArguments
+            };
+
+            const definitionCallResults = Object.fromEntries(
+                definitions
+                    .filter(definition => definition.startsWith("Function "))
+                    .map(definition => {
+                        const functionName = definition.split(' ')[1];
+                        const callReturnTypes = (definition.split(' => ')[1] || '')
+                            .split(' ')
+                            .filter(x => x);
+
+                        return [
+                            functionName,
+                            getSizesAndOffsetsFromTypes(
+                                callReturnTypes,
+                                false
+                            )
+                        ];
+                    })
+            );
+
+            this.callResultsByFunction = {
+                ...definitionCallResults,
+                ...Encoder.erc20CallResults
+            };
+        }
 
         this.callIndex = 0;
         for (let action of actions) {
