@@ -174,9 +174,12 @@ class Validator {
         if (this.namesSet.size !== names.length) {
             throw new Error("All action scripts must have a unique name");
         }
-
+        this.advancedScripts = new Set();
         for (const script of this.actionScripts) {
-            this.validateActionScript(script);
+            const isAdvanced = this.validateActionScript(script);
+            if (isAdvanced) {
+                this.advancedScripts.add(script.name);
+            }
         }
     }
 
@@ -246,12 +249,14 @@ class Validator {
 
         Validator.validateVariablesAndResults(actionScript);
         this.validateDefinitions(actionScript);
-        Validator.validateActions(actionScript);
+        const isAdvanced = Validator.validateActions(actionScript);
         Validator.validateInputs(actionScript);
         Validator.validateOutputs(actionScript);
         Validator.validateAssociations(actionScript);
         // TODO: validate operations / results
         // TODO: validate description strings
+
+        return isAdvanced;
     }
 
     static validateVariablesAndResults(actionScript) {
@@ -409,7 +414,9 @@ class Validator {
         }
     }
 
-    static validateAction(action, index, actionScript) {
+    static validateAction(action, index, actionScript, callResultVariables) {
+        let hasAdvanced = false;
+
         const { name, variables, definitions } = actionScript;
 
         const {
@@ -437,12 +444,17 @@ class Validator {
             );
         }
 
+        const actionCallResultVariables = (
+            action.split(" => ")[1] || ""
+        ).split(" ").filter(x => x);
+
         const actionContract = splitAction[0];
 
         if (actionContract in definedActions) {
             const targetActionScript = definedActions[actionContract];
             console.log(targetActionScript);
-            return;
+            // TODO: handle defined / inherited actions!
+            return [hasAdvanced, callResultVariables];
         }
 
         let actionFunction = splitAction[1];
@@ -466,6 +478,9 @@ class Validator {
                         `Action script "${name}" ETHER recipient variable "${to}" is not type "address"`
                     );
                 }
+            } else if (callResultVariables.has(to)) {
+                hasAdvanced = true;
+                // TODO: validate that call result variable is address type
             } else {
                 Validator.ensureValidChecksum(to);
             }
@@ -476,11 +491,15 @@ class Validator {
                         `Action script "${name}" ETHER payment amount variable "${amount}" is not type "uintXXX"`
                     );
                 }
+            } else if (callResultVariables.has(amount)) {
+                hasAdvanced = true;
+                // TODO: validate that call result variable is uint type
             } else {
                 // TODO: ensure valid number
             }
 
-            return;
+            // TODO: decide if ETHER calls can have result variables?
+            return [hasAdvanced, callResultVariables];
         }
 
         if (!definedTokensAndContracts.has(actionContract)) {
@@ -578,6 +597,9 @@ class Validator {
                         `Action script "${name}" variable "${givenArgument}" on function ${actionFunction} is not type "${expectedArgumentType}"`
                     );
                 }
+            } else if (callResultVariables.has(givenArgument)) {
+                hasAdvanced = true;
+                // TODO: determine type of call result variable and validate type
             } else {
                 if (expectedArgumentType === "address") {
                     if (!definedTokensAndContracts.has(givenArgument)) {
@@ -588,6 +610,12 @@ class Validator {
                 }
             }
         }
+
+        for (const variable of actionCallResultVariables) {
+            callResultVariables.add(variable);
+        }
+
+        return [hasAdvanced, callResultVariables];
     }
 
     static getDefinedEntities(actionScript) {
@@ -624,7 +652,8 @@ class Validator {
         };
     }
 
-    static validateConditionalAction(action, index, actionScript) {
+    static validateConditionalAction(action, index, actionScript, callResultVariables) {
+        let hasAdvanced;
         const { name } = actionScript;
         if (
             Object.keys(action).length !== 1 ||
@@ -673,10 +702,11 @@ class Validator {
                 for (let [conditionalActionIndex, conditionalAction] of Object.entries(conditionalValues[field])) {
                     if (Validator.TYPE_CHECKERS.object(conditionalAction)) {
                         try {
-                            Validator.validateConditionalAction(
+                            [hasAdvanced, callResultVariables] = Validator.validateConditionalAction(
                                 conditionalAction,
                                 conditionalActionIndex,
-                                actionScript
+                                actionScript,
+                                callResultVariables
                             );
                         } catch (error) {
                             throw new Error(
@@ -687,10 +717,11 @@ class Validator {
                         const splitConditionalAction = conditionalAction.split(" ");
 
                         try {
-                            Validator.validateAction(
+                            [hasAdvanced, callResultVariables] = Validator.validateAction(
                                 conditionalAction,
                                 conditionalActionIndex,
-                                actionScript
+                                actionScript,
+                                callResultVariables
                             );
                         } catch (error) {
                             throw new Error(
@@ -701,26 +732,37 @@ class Validator {
                 }
             }
         }
+
+        return [hasAdvanced, callResultVariables];
     }
 
     static validateActions(actionScript) {
         const { actions } = actionScript;
-
+        let isAdvanced = false;
+        let callResultVariables = new Set();
         for (let [index, action] of Object.entries(actions)) {
+            let hasAdvanced;
             if (Validator.TYPE_CHECKERS.object(action)) {
-                Validator.validateConditionalAction(
+                [hasAdvanced, callResultVariables] = Validator.validateConditionalAction(
                     action,
                     index,
-                    actionScript
+                    actionScript,
+                    callResultVariables
                 )
             } else {
-                Validator.validateAction(
+                [hasAdvanced, callResultVariables] = Validator.validateAction(
                     action,
                     index,
-                    actionScript
+                    actionScript,
+                    callResultVariables
                 );
             }
+            if (!!hasAdvanced) {
+                isAdvanced = true;
+            }
         }
+
+        return isAdvanced;
     }
 
     static getInputEntities(actionScript) {
