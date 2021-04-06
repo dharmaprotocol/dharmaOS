@@ -464,7 +464,14 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                 ethers.BigNumber.from(inputValue)
             );
         } else {
-            inputTokens[tokenName] = ethers.BigNumber.from(inputValue);
+            if (!isNaN(parseInt(inputValue))) {
+                inputTokens[tokenName] = ethers.BigNumber.from(inputValue);
+            } else {
+                // Fallback to a default input value
+                inputTokens[tokenName] = ethers.BigNumber.from(
+                    "1".padEnd(18, "0")
+                );
+            }
         }
     }
 
@@ -659,7 +666,8 @@ async function evaluate(actionScriptName, variables, blockNumber) {
     await encoder.parseActionScriptDefinitions();
     await encoder.constructCallsAndResultsFormat();
 
-    const callResults = await wallet.callStatic.simulate(encoder.calls);
+    const simulateTarget = !encoder.isAdvanced ? 'simulate' : 'simulateAdvanced';
+    const callResults = await wallet.callStatic[simulateTarget](encoder.calls);
 
     const parserArgs = {
         actionScriptName,
@@ -677,7 +685,8 @@ async function evaluate(actionScriptName, variables, blockNumber) {
 
     let events = {};
     if (!!success) {
-        let execution = await wallet.execute(encoder.calls);
+        const executeTarget = !encoder.isAdvanced ? 'execute' : 'executeAdvanced';
+        let execution = await wallet[executeTarget](encoder.calls);
         execution = await execution.wait();
         const logs = execution.logs;
 

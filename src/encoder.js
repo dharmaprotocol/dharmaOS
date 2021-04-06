@@ -228,6 +228,99 @@ const ERC20_ABI = [
 const ETHER_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
 class Encoder {
+    static typeSizes = (type) => {
+        if (!(typeof type === "string")) {
+            throw new Error("Types must be formatted as strings.");
+        }
+
+        if (type === "string" || type === "bytes") {
+            throw new Error("Cannot infer size of dynamically-sized types.");
+        }
+
+        if (type.includes("[")) {
+            throw new Error("Typed array types are not yet supported.");
+        }
+
+        if (type.includes("(")) {
+            throw new Error("Struct types are not yet supported.");
+        }
+
+        return 32;
+    }
+
+    static typeZeroPaddings = (type) => {
+        if (!(typeof type === "string")) {
+            throw new Error("Types must be formatted as strings.");
+        }
+
+        if (type === "string" || type === "bytes") {
+            throw new Error("Cannot infer zero-padding of dynamically-sized types.");
+        }
+
+        if (type.includes("[")) {
+            throw new Error("Typed array types are not yet supported.");
+        }
+
+        if (type.includes("(")) {
+            throw new Error("Struct types are not yet supported.");
+        }
+
+        if (type === "bool") {
+            return false;
+        }
+
+        if (type.startsWith("uint")) {
+            return 0;
+        }
+
+        // Note: look into actual encoding and ensure that this is correct
+        if (type.startsWith("int")) {
+            return 0;
+        }
+
+        if (type.startsWith("bytes")) {
+            return "0x0";
+        }
+
+        throw new Error(`Zero-padding for type "${type}" not yet implemented!`);
+    }
+
+    static erc20CallArguments = Object.fromEntries(
+        [
+            ['transfer', ['address', 'uint256']],
+            ['transferFrom', ['address', 'address', 'uint256']],
+            ['approve', ['address', 'uint256']],
+            ['allowance', ['address', 'address']],
+            ['balanceOf', ['address']],
+            ['totalSupply', []]
+        ].map(([functionName, functionArguments]) => [
+            functionName,
+            functionArguments.map((type, i) => ({
+                type,
+                size: 32,
+                offset: 4 + 32 * i
+            }))
+        ])
+    );
+
+    static erc20CallResults = Object.fromEntries(
+        [
+            'transfer',
+            'transferFrom',
+            'approve',
+            'allowance',
+            'balanceOf',
+            'totalSupply'
+        ].map(functionName => [
+            functionName,
+            [{
+                type: functionName.includes('l') ? 'uint256' : 'bool',
+                size: 32,
+                offset: 0
+            }]
+        ])
+    );
+
     static async encode(actionScriptName, variables, wallet) {
         const encoder = new Encoder(actionScriptName, variables, wallet);
         await encoder.parseActionScriptDefinitions();
@@ -279,8 +372,11 @@ class Encoder {
         } else {
             const appliedArgs = [];
 
-            // parse calls
+            // parse calls and results
             const splitActionCalls = action.split(" => ")[0];
+            const splitActionResults = (action.split(" => ")[1] || "")
+                .split(" ")
+                .filter(x => x);
 
             let [contractName, functionName, ...args] = splitActionCalls.split(
                 " "
@@ -301,17 +397,72 @@ class Encoder {
                 } else if (payableArg in this.targetContracts) {
                     appliedPayableArg = this.targetContracts[payableArg]
                         .address;
+                } else if (this.isAdvanced && payableArg in this.knownCallResultVariables) {
+                    const {
+                        callIndex,
+                        returndata,
+                    } = this.knownCallResultVariables[payableArg];
+
+                    // TODO: check returndata type + size and ensure it's valid
+
+                    this.calls[callIndex].replaceValue.push({
+                        returnDataOffset: returndata.offset,
+                        valueLength: returndata.size,
+                        callIndex: this.callIndex,
+                    });
+
+                    appliedPayableArg = 0;
                 } else {
                     appliedPayableArg = payableArg;
                 }
             }
 
-            for (let arg of args) {
+            for (let [argIndex, arg] of Object.entries(args)) {
                 if (arg in this.variables) {
                     const appliedArg = this.variables[arg];
                     appliedArgs.push(appliedArg);
                 } else if (arg in this.targetContracts) {
                     appliedArgs.push(this.targetContracts[arg].address);
+                } else if (this.isAdvanced && arg in this.knownCallResultVariables) {
+                    const {
+                        callIndex,
+                        returndata,
+                    } = this.knownCallResultVariables[arg];
+
+                    const calldata = this.callArgumentsByFunction[functionName][argIndex];
+
+                    if (calldata.type !== returndata.type) {
+                        throw new Error(
+                            `arg "${
+                                arg
+                            }" calldata type "${
+                                calldata.type
+                            }" does not match returndata type "${
+                                returndata.type
+                            }"`
+                        );
+                    }
+
+                    if (calldata.size !== returndata.size) {
+                        throw new Error(
+                            `arg "${
+                                arg
+                            }" calldata size "${
+                                calldata.size
+                            }" does not match returndata size "${
+                                returndata.size
+                            }"`
+                        );
+                    }
+
+                    this.calls[callIndex].replaceData.push({
+                        returnDataOffset: returndata.offset,
+                        dataLength: returndata.size,
+                        callIndex: this.callIndex,
+                        callDataOffset: calldata.offset,
+                    });
+
+                    appliedArgs.push(Encoder.typeZeroPaddings(returndata.type));
                 } else {
                     appliedArgs.push(arg);
                 }
@@ -324,11 +475,21 @@ class Encoder {
             }
 
             if (contractName === "ETHER") {
-                this.calls.push({
-                    to: appliedArgs[0],
-                    value: appliedArgs[1],
-                    data: "0x",
-                });
+                if (!this.isAdvanced) {
+                    this.calls.push({
+                        to: appliedArgs[0],
+                        value: appliedArgs[1],
+                        data: "0x",
+                    });
+                } else {
+                    this.calls.push({
+                        to: appliedArgs[0],
+                        value: appliedArgs[1],
+                        data: "0x",
+                        replaceValue: [],
+                        replaceData: [],
+                    });
+                }
 
                 this.callABIs.push({
                     payable: true,
@@ -339,11 +500,21 @@ class Encoder {
                 const contract = this.contracts[contractName];
                 const to = contract.address;
 
-                this.calls.push({
-                    to,
-                    value: appliedPayableArg,
-                    data: "0x",
-                });
+                if (!this.isAdvanced) {
+                    this.calls.push({
+                        to,
+                        value: appliedPayableArg,
+                        data: "0x",
+                    });
+                } else {
+                    this.calls.push({
+                        to,
+                        value: appliedPayableArg,
+                        data: "0x",
+                        replaceValue: [],
+                        replaceData: [],
+                    });
+                }
 
                 this.callABIs.push({
                     payable: true,
@@ -359,11 +530,21 @@ class Encoder {
                     appliedArgs
                 );
 
-                this.calls.push({
-                    to,
-                    value: appliedPayableArg,
-                    data,
-                });
+                if (!this.isAdvanced) {
+                    this.calls.push({
+                        to,
+                        value: appliedPayableArg,
+                        data,
+                    });
+                } else {
+                    this.calls.push({
+                        to,
+                        value: appliedPayableArg,
+                        data,
+                        replaceValue: [],
+                        replaceData: [],
+                    });
+                }
 
                 const callABIIndex = this.targetContracts[contractName].abi
                     .map((f) => f.name)
@@ -378,17 +559,18 @@ class Encoder {
                 );
 
                 // parse results
-                const splitActionResults = action.split(" => ");
+                for (let [resultIndex, result] of Object.entries(splitActionResults)) {
+                    if (!(this.callIndex in this.resultToParse)) {
+                        this.resultToParse[this.callIndex] = {};
+                    }
 
-                if (splitActionResults.length === 2) {
-                    const results = splitActionResults[1].split(" ");
+                    this.resultToParse[this.callIndex][resultIndex] = result;
 
-                    for (let [argumentIndex, result] of Object.entries(results)) {
-                        if (!(this.callIndex in this.resultToParse)) {
-                            this.resultToParse[this.callIndex] = {};
-                        }
-
-                        this.resultToParse[this.callIndex][argumentIndex] = result;
+                    if (this.isAdvanced) {
+                        this.knownCallResultVariables[result] = {
+                            callIndex: this.callIndex,
+                            returndata: this.callResultsByFunction[functionName][resultIndex],
+                        };
                     }
                 }
             }
@@ -403,10 +585,95 @@ class Encoder {
         this.calls = [];
         this.callABIs = [];
         this.resultToParse = {};
+        this.isAdvanced = script.isAdvanced;
 
-        const { actions } = script;
+        const { actions, definitions } = script;
+
+        this.callArgumentsByFunction = {};
+        this.callResultsByFunction = {};
+
+        if (this.isAdvanced) {
+            const getSizesAndOffsetsFromTypes = (types, includeSelector) => {
+                if (types.length === 0) {
+                    return [];
+                }
+
+                const sizes = types.map(
+                    Encoder.typeSizes
+                );
+
+                const extraOffset = includeSelector ? 4 : 0;
+                const offsets = sizes.map(
+                    (sum => value => sum += value)(-sizes[0] + extraOffset)
+                );
+
+                return types.map(
+                    (type, i) => ({
+                        type,
+                        size: sizes[i],
+                        offset: offsets[i],
+                    })
+                );
+            }
+
+            const definitionCallArguments = Object.fromEntries(
+                definitions
+                    .filter(definition => definition.startsWith("Function "))
+                    .map(definition => {
+                        const functionName = definition.split(' ')[1];
+                        const callArgumentTypes = definition.split(' ')[3] === 'fallback'
+                            ? []
+                            : definition
+                                .split(" => ")[0]
+                                .replace(":payable", "")
+                                .split("(")[1]
+                                .slice(0, -1)
+                                .split(",")
+                                .filter(x => x)
+                                .map(x => x.trim(" "));
+
+                        return [
+                            functionName,
+                            getSizesAndOffsetsFromTypes(
+                                callArgumentTypes,
+                                true
+                            )
+                        ];
+                    })
+            );
+
+            this.callArgumentsByFunction = {
+                ...definitionCallArguments,
+                ...Encoder.erc20CallArguments
+            };
+
+            const definitionCallResults = Object.fromEntries(
+                definitions
+                    .filter(definition => definition.startsWith("Function "))
+                    .map(definition => {
+                        const functionName = definition.split(' ')[1];
+                        const callReturnTypes = (definition.split(' => ')[1] || '')
+                            .split(' ')
+                            .filter(x => x);
+
+                        return [
+                            functionName,
+                            getSizesAndOffsetsFromTypes(
+                                callReturnTypes,
+                                false
+                            )
+                        ];
+                    })
+            );
+
+            this.callResultsByFunction = {
+                ...definitionCallResults,
+                ...Encoder.erc20CallResults
+            };
+        }
 
         this.callIndex = 0;
+        this.knownCallResultVariables = {};
         for (let action of actions) {
             this.constructCallAndResultFormat(action);
         }

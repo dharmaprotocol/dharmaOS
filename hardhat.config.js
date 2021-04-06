@@ -7,7 +7,15 @@ const url = process.env.WEB3_PROVIDER_URL;
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.8.1",
+  solidity: {
+    version: "0.8.3",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      }
+    }
+  },
   networks: {
     hardhat: {
       forking: {
@@ -17,6 +25,6 @@ module.exports = {
   },
   mocha: {
     timeout: 99999,
-    parallel: true
+    parallel: true,
   }
 };
