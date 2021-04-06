@@ -248,32 +248,78 @@ class Encoder {
         return 32;
     }
 
-    static erc20CallArguments = Object.fromEntries([
-      ['transfer', ['address', 'uint256']],
-      ['transferFrom', ['address', 'address', 'uint256']],
-      ['approve', ['address', 'uint256']],
-      ['allowance', ['address', 'address']],
-      ['balanceOf', ['address']],
-      ['totalSupply', []]
-    ].map(([functionName, functionArguments]) => [
-        functionName,
-        functionArguments.map((type, i) => ({
-            type,
-            size: 32,
-            offset: 4 + 32 * i
-        }))
-    ]));
+    static typeZeroPaddings = (type) => {
+        if (!(typeof type === "string")) {
+            throw new Error("Types must be formatted as strings.");
+        }
 
-    static erc20CallResults = Object.fromEntries([
-      'transfer', 'transferFrom', 'approve', 'allowance', 'balanceOf', 'totalSupply'
-    ].map(functionName => [
-        functionName,
-        [{
-            type: functionName.includes('l') ? 'uint256' : 'bool',
-            size: 32,
-            offset: 0
-        }]
-    ]));
+        if (type === "string" || type === "bytes") {
+            throw new Error("Cannot infer zero-padding of dynamically-sized types.");
+        }
+
+        if (type.includes("[")) {
+            throw new Error("Typed array types are not yet supported.");
+        }
+
+        if (type.includes("(")) {
+            throw new Error("Struct types are not yet supported.");
+        }
+
+        if (type === "bool") {
+            return false;
+        }
+
+        if (type.startsWith("uint")) {
+            return 0;
+        }
+
+        // Note: look into actual encoding and ensure that this is correct
+        if (type.startsWith("int")) {
+            return 0;
+        }
+
+        if (type.startsWith("bytes")) {
+            return "0x0";
+        }
+
+        throw new Error(`Zero-padding for type "${type}" not yet implemented!`);
+    }
+
+    static erc20CallArguments = Object.fromEntries(
+        [
+            ['transfer', ['address', 'uint256']],
+            ['transferFrom', ['address', 'address', 'uint256']],
+            ['approve', ['address', 'uint256']],
+            ['allowance', ['address', 'address']],
+            ['balanceOf', ['address']],
+            ['totalSupply', []]
+        ].map(([functionName, functionArguments]) => [
+            functionName,
+            functionArguments.map((type, i) => ({
+                type,
+                size: 32,
+                offset: 4 + 32 * i
+            }))
+        ])
+    );
+
+    static erc20CallResults = Object.fromEntries(
+        [
+            'transfer',
+            'transferFrom',
+            'approve',
+            'allowance',
+            'balanceOf',
+            'totalSupply'
+        ].map(functionName => [
+            functionName,
+            [{
+                type: functionName.includes('l') ? 'uint256' : 'bool',
+                size: 32,
+                offset: 0
+            }]
+        ])
+    );
 
     static async encode(actionScriptName, variables, wallet) {
         const encoder = new Encoder(actionScriptName, variables, wallet);
@@ -314,8 +360,11 @@ class Encoder {
         } else {
             const appliedArgs = [];
 
-            // parse calls
+            // parse calls and results
             const splitActionCalls = action.split(" => ")[0];
+            const splitActionResults = (action.split(" => ")[1] || "")
+                .split(" ")
+                .filter(x => x);
 
             let [contractName, functionName, ...args] = splitActionCalls.split(
                 " "
@@ -336,21 +385,44 @@ class Encoder {
                 } else if (payableArg in this.targetContracts) {
                     appliedPayableArg = this.targetContracts[payableArg]
                         .address;
+                } else if (this.isAdvanced && payableArg in this.knownCallResultVariables) {
+                    const {
+                        callIndex,
+                        returndata,
+                    } = this.knownCallResultVariables[payableArg];
+
+                    this.calls[callIndex].replaceValue.push({
+                        returnDataOffset: returndata.offset,
+                        valueLength: returndata.size,
+                        callIndex: this.callIndex,
+                    });
+
+                    appliedPayableArg = 0;
                 } else {
                     appliedPayableArg = payableArg;
                 }
             }
 
-            for (let arg of args) {
+            for (let [argIndex, arg] of Object.entries(args)) {
                 if (arg in this.variables) {
                     const appliedArg = this.variables[arg];
                     appliedArgs.push(appliedArg);
                 } else if (arg in this.targetContracts) {
                     appliedArgs.push(this.targetContracts[arg].address);
-                } else if (this.isAdvanced) {
-                    // TODO: determine if the arg in question is "advanced" —
-                    // if so, pad it with zeroes based on its type
-                    appliedArgs.push(0); // FIX: Obviously this is incorrect
+                } else if (this.isAdvanced && arg in this.knownCallResultVariables) {
+                    const {
+                        callIndex,
+                        returndata,
+                    } = this.knownCallResultVariables[arg];
+
+                    this.calls[callIndex].replaceData.push({
+                        returnDataOffset: returndata.offset,
+                        dataLength: returndata.size,
+                        callIndex: this.callIndex,
+                        callDataOffset: this.callArgumentsByFunction[functionName][argIndex],
+                    });
+
+                    appliedArgs.push(Encoder.typeZeroPaddings(returndata.type));
                 } else {
                     appliedArgs.push(arg);
                 }
@@ -370,7 +442,13 @@ class Encoder {
                         data: "0x",
                     });
                 } else {
-                    throw new Error("Unable to encode advanced calls yet!");
+                    this.calls.push({
+                        to: appliedArgs[0],
+                        value: appliedArgs[1],
+                        data: "0x",
+                        replaceValue: [],
+                        replaceData: [],
+                    });
                 }
 
                 this.callABIs.push({
@@ -389,7 +467,13 @@ class Encoder {
                         data: "0x",
                     });
                 } else {
-                    throw new Error("Unable to encode advanced calls yet!");
+                    this.calls.push({
+                        to,
+                        value: appliedPayableArg,
+                        data: "0x",
+                        replaceValue: [],
+                        replaceData: [],
+                    });
                 }
 
                 this.callABIs.push({
@@ -413,7 +497,13 @@ class Encoder {
                         data,
                     });
                 } else {
-                    throw new Error("Unable to encode advanced calls yet!");
+                    this.calls.push({
+                        to,
+                        value: appliedPayableArg,
+                        data,
+                        replaceValue: [],
+                        replaceData: [],
+                    });
                 }
 
                 const callABIIndex = this.targetContracts[contractName].abi
@@ -429,18 +519,17 @@ class Encoder {
                 );
 
                 // parse results
-                const splitActionResults = action.split(" => ");
-
-                if (splitActionResults.length === 2) {
-                    const results = splitActionResults[1].split(" ");
-
-                    for (let [argumentIndex, result] of Object.entries(results)) {
-                        if (!(this.callIndex in this.resultToParse)) {
-                            this.resultToParse[this.callIndex] = {};
-                        }
-
-                        this.resultToParse[this.callIndex][argumentIndex] = result;
+                for (let [resultIndex, result] of Object.entries(splitActionResults)) {
+                    if (!(this.callIndex in this.resultToParse)) {
+                        this.resultToParse[this.callIndex] = {};
                     }
+
+                    this.resultToParse[this.callIndex][resultIndex] = result;
+
+                    this.knownCallResultVariables[result] = {
+                        callIndex: this.callIndex,
+                        returndata: this.callResultsByFunction[functionName][resultIndex],
+                    };
                 }
             }
 
@@ -542,6 +631,7 @@ class Encoder {
         }
 
         this.callIndex = 0;
+        this.knownCallResultVariables = {};
         for (let action of actions) {
             this.constructCallAndResultFormat(action);
         }
