@@ -24,14 +24,24 @@ class ResultsParser {
     }
 
     async parse() {
-        const { ok, returnData } = this.callResults;
+        this.script = await Validator.getActionScript(this.actionScriptName);
 
-        const success = ok.every((x) => x);
-        const rawResults = this.calls.map((x, i) => [x, ok[i], returnData[i]]);
+        let success;
+        let rawResults;
+        let results;
+        if (!this.script.isAdvanced) {
+            const { ok, returnData } = this.callResults;
 
-        const results = await Promise.all(
-            rawResults.map(async (x, i) => this.parseCall(x, this.callABIs[i]))
-        );
+            success = ok.every((x) => x);
+            rawResults = this.calls.map((x, i) => [x, ok[i], returnData[i]]);
+
+            results = await Promise.all(
+                rawResults.map(async (x, i) => this.parseCall(x, this.callABIs[i]))
+            );
+        } else {
+            // TODO: parse based on AdvancedCallResults[]
+            throw new Error("Parsing advanced call results is not implemented yet!");
+        }
 
         let parsedResults = {};
 
@@ -64,8 +74,6 @@ class ResultsParser {
                 parsedResults[resultName] = parsedResult;
             }
         }
-
-        this.script = await Validator.getActionScript(this.actionScriptName);
 
         // run operations
         const operations = this.script.operations || [];
