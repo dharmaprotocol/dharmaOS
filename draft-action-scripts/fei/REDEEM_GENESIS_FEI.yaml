@@ -1,0 +1,36 @@
+name: "REDEEM_GENESIS_FEI"
+
+summary: "Redeem FGEN and cFGEN at the completion of the genesis event for FEI and TRIBE"
+
+variables:
+
+results:
+  receivedFei: uint256
+  receivedTribe: uint256
+
+definitions:
+ - Token FEI 0x956F47F50A910163D8BF957Cf5846D573E7f87CA
+ - Token TRIBE 0xc7283b66Eb1EB5FB86327f08e1B5816b0720212B
+ - Token GenesisGroup 0xBFfB152b9392e38CdDc275D818a3Db7FE364596b
+ - Function redeem GenesisGroup redeem(address)
+
+inputs:
+
+actions:
+ - FEI balanceOf wallet => initialFei
+ - TRIBE balanceOf wallet => initialTribe
+ - GenesisGroup redeem wallet
+ - FEI balanceOf wallet => receivedFei
+ - TRIBE balanceOf wallet => receivedTribe
+
+operations:
+ - finalFei - initialFei => receivedFei
+ - finalTribe - initialTribe => receivedTribe
+
+outputs:
+ - FEI: receivedFei
+ - TRIBE: receivedTribe
+
+associations:
+
+description: "Redeem FGEN and cFGEN for ${receivedFei:FEI.decimals} FEI and ${receivedTribe:TRIBE.decimals} TRIBE"

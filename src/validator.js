@@ -15,7 +15,9 @@ class Validator {
     static async getActionScript(name) {
         const validator = new Validator();
         await validator.parseActionScripts();
-        return validator.getActionScriptAfterParsing(name);
+        const script = validator.getActionScriptAfterParsing(name);
+        const isAdvanced = validator.validateActionScript(script);
+        return {...script, isAdvanced};
     }
 
     getActionScriptAfterParsing(name) {
@@ -35,6 +37,8 @@ class Validator {
         string: (x) => x && (typeof x === "string" || x instanceof String),
         array: (x) => x && Array.isArray(x) && typeof x === "object",
         object: (x) => x && !Array.isArray(x) && typeof x === "object",
+        conditionalObject: (x) => x && !Array.isArray(x) && typeof x === "object" && "if" in x,
+        rawObject: (x) => x && !Array.isArray(x) && typeof x === "object" && "raw" in x,
     };
 
     static VALID_VARIABLE_TYPES = new Set([
@@ -45,6 +49,7 @@ class Validator {
         "uint8",
         "uint16",
         "int128",
+        "bytes"
     ]);
 
     static INPUT_SELECTORS = new Set([
@@ -82,6 +87,12 @@ class Validator {
         else: "array",
     };
 
+    static RAW_FIELDS_AND_TYPES = {
+        to: "address",
+        value: "uint256",
+        data: "bytes",
+    };
+
     // Note: name, summary, actions and description are all required!
     static TOP_LEVEL_DEFAULTS = {
         variables: {},
@@ -94,6 +105,8 @@ class Validator {
     };
 
     static RESERVED_KEYWORDS = new Set(["wallet", "ETHER"]);
+
+    static RESERVED_ACTION_SCRIPT_NAMES = { SEND_TRANSACTION: "SEND_TRANSACTION" };
 
     getFilePaths(dir) {
         const dirents = fs.readdirSync(dir, { withFileTypes: true });
@@ -166,17 +179,21 @@ class Validator {
         this.actionScripts = relevantFilepaths.map(
             this.parseActionScriptByPath
         );
-    }
 
-    validateActionScripts() {
         const names = this.actionScripts.map((script) => script.name);
         this.namesSet = new Set(names);
         if (this.namesSet.size !== names.length) {
             throw new Error("All action scripts must have a unique name");
         }
+    }
 
+    validateActionScripts() {
+        this.advancedScripts = new Set();
         for (const script of this.actionScripts) {
-            this.validateActionScript(script);
+            const isAdvanced = this.validateActionScript(script);
+            if (isAdvanced) {
+                this.advancedScripts.add(script.name);
+            }
         }
     }
 
@@ -246,12 +263,14 @@ class Validator {
 
         Validator.validateVariablesAndResults(actionScript);
         this.validateDefinitions(actionScript);
-        Validator.validateActions(actionScript);
+        const isAdvanced = Validator.validateActions(actionScript);
         Validator.validateInputs(actionScript);
         Validator.validateOutputs(actionScript);
         Validator.validateAssociations(actionScript);
         // TODO: validate operations / results
         // TODO: validate description strings
+
+        return isAdvanced;
     }
 
     static validateVariablesAndResults(actionScript) {
@@ -409,7 +428,9 @@ class Validator {
         }
     }
 
-    static validateAction(action, index, actionScript) {
+    static validateAction(action, index, actionScript, callResultVariables) {
+        let hasAdvanced = false;
+
         const { name, variables, definitions } = actionScript;
 
         const {
@@ -437,12 +458,17 @@ class Validator {
             );
         }
 
+        const actionCallResultVariables = (
+            action.split(" => ")[1] || ""
+        ).split(" ").filter(x => x);
+
         const actionContract = splitAction[0];
 
         if (actionContract in definedActions) {
             const targetActionScript = definedActions[actionContract];
             console.log(targetActionScript);
-            return;
+            // TODO: handle defined / inherited actions!
+            return [hasAdvanced, callResultVariables];
         }
 
         let actionFunction = splitAction[1];
@@ -466,6 +492,9 @@ class Validator {
                         `Action script "${name}" ETHER recipient variable "${to}" is not type "address"`
                     );
                 }
+            } else if (callResultVariables.has(to)) {
+                hasAdvanced = true;
+                // TODO: validate that call result variable is address type
             } else {
                 Validator.ensureValidChecksum(to);
             }
@@ -476,11 +505,15 @@ class Validator {
                         `Action script "${name}" ETHER payment amount variable "${amount}" is not type "uintXXX"`
                     );
                 }
+            } else if (callResultVariables.has(amount)) {
+                hasAdvanced = true;
+                // TODO: validate that call result variable is uint type
             } else {
                 // TODO: ensure valid number
             }
 
-            return;
+            // TODO: decide if ETHER calls can have result variables?
+            return [hasAdvanced, callResultVariables];
         }
 
         if (!definedTokensAndContracts.has(actionContract)) {
@@ -578,6 +611,9 @@ class Validator {
                         `Action script "${name}" variable "${givenArgument}" on function ${actionFunction} is not type "${expectedArgumentType}"`
                     );
                 }
+            } else if (callResultVariables.has(givenArgument)) {
+                hasAdvanced = true;
+                // TODO: determine type of call result variable and validate type
             } else {
                 if (expectedArgumentType === "address") {
                     if (!definedTokensAndContracts.has(givenArgument)) {
@@ -588,6 +624,12 @@ class Validator {
                 }
             }
         }
+
+        for (const variable of actionCallResultVariables) {
+            callResultVariables.add(variable);
+        }
+
+        return [hasAdvanced, callResultVariables];
     }
 
     static getDefinedEntities(actionScript) {
@@ -624,11 +666,12 @@ class Validator {
         };
     }
 
-    static validateConditionalAction(action, index, actionScript) {
+    static validateConditionalAction(action, index, actionScript, callResultVariables) {
+        let hasAdvanced;
         const { name } = actionScript;
         if (
             Object.keys(action).length !== 1 ||
-            Object.keys(action)[0] !== 'if'
+            (Object.keys(action)[0] !== 'if' && Object.keys(action)[0] !== 'raw')
         ) {
             throw new Error(
                 `Action script "${name}" action #${parseInt(index) + 1} supplies an object that is not a conditional (key: "if")`
@@ -673,10 +716,11 @@ class Validator {
                 for (let [conditionalActionIndex, conditionalAction] of Object.entries(conditionalValues[field])) {
                     if (Validator.TYPE_CHECKERS.object(conditionalAction)) {
                         try {
-                            Validator.validateConditionalAction(
+                            [hasAdvanced, callResultVariables] = Validator.validateConditionalAction(
                                 conditionalAction,
                                 conditionalActionIndex,
-                                actionScript
+                                actionScript,
+                                callResultVariables
                             );
                         } catch (error) {
                             throw new Error(
@@ -687,10 +731,11 @@ class Validator {
                         const splitConditionalAction = conditionalAction.split(" ");
 
                         try {
-                            Validator.validateAction(
+                            [hasAdvanced, callResultVariables] = Validator.validateAction(
                                 conditionalAction,
                                 conditionalActionIndex,
-                                actionScript
+                                actionScript,
+                                callResultVariables
                             );
                         } catch (error) {
                             throw new Error(
@@ -701,26 +746,72 @@ class Validator {
                 }
             }
         }
+
+        return [hasAdvanced, callResultVariables];
+    }
+
+    static validateRawAction(action, index, actionScript) {
+        const { name } = actionScript;
+
+        if (name !== Validator.RESERVED_ACTION_SCRIPT_NAMES.SEND_TRANSACTION) {
+            throw new Error(
+                `Action script "${name}" is not allowed to define a raw object`
+            );
+        }
+
+        if (
+            Object.keys(action).length !== 1 || Object.keys(action)[0] !== 'raw'
+        ) {
+            throw new Error(
+                `Action script "${name}" action #${parseInt(index) + 1} supplies an object that is not a raw (key: "raw")`
+            );
+        }
+
+        const validFields = new Set(
+            Object.keys(Validator.RAW_FIELDS_AND_TYPES)
+        );
+        for (let field of Object.keys(action.raw)) {
+            if (!validFields.has(field)) {
+                throw new Error(
+                    `Action script "${name}" raw value (action #${parseInt(index) + 1}) contains invalid field "${field}"`
+                );
+            }
+        }
     }
 
     static validateActions(actionScript) {
         const { actions } = actionScript;
-
+        let isAdvanced = false;
+        let callResultVariables = new Set();
         for (let [index, action] of Object.entries(actions)) {
-            if (Validator.TYPE_CHECKERS.object(action)) {
-                Validator.validateConditionalAction(
+            let hasAdvanced;
+            if (Validator.TYPE_CHECKERS.conditionalObject(action)) {
+                [hasAdvanced, callResultVariables] = Validator.validateConditionalAction(
+                    action,
+                    index,
+                    actionScript,
+                    callResultVariables
+                )
+            } else if (Validator.TYPE_CHECKERS.rawObject(action)) {
+                Validator.validateRawAction(
                     action,
                     index,
                     actionScript
                 )
             } else {
-                Validator.validateAction(
+                [hasAdvanced, callResultVariables] = Validator.validateAction(
                     action,
                     index,
-                    actionScript
+                    actionScript,
+                    callResultVariables
                 );
             }
+            if (!!hasAdvanced) {
+                isAdvanced = true;
+            }
         }
+
+        return isAdvanced;
     }
 
     static getInputEntities(actionScript) {
@@ -819,7 +910,7 @@ class Validator {
         // Determine each action that is a conditional
         const conditionalActions = [];
         for (let [i, action] of Object.entries(actions)) {
-            if (Validator.TYPE_CHECKERS.object(action)) {
+            if (Validator.TYPE_CHECKERS.conditionalObject(action)) {
                 conditionalActions.push(i);
             }
         }
@@ -871,7 +962,7 @@ class Validator {
                         delete inputTokens[replacementInputToken];
                         inputTokens[inputTokenToReplace] = inputValuesToReplace;
                     }
-                } else {
+                } else if (!Validator.TYPE_CHECKERS.rawObject(action)) {
                     inputTokens = Validator.validateInput(action, actionScript, {...inputTokens});
                 }
             }

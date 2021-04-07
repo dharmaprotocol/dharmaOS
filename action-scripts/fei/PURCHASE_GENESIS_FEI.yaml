@@ -1,0 +1,31 @@
+name: "PURCHASE_GENESIS_FEI"
+
+summary: "Purchase Fei in genesis event using Ether"
+
+variables:
+  suppliedEther: uint256
+
+results:
+  receivedFGEN: uint256
+
+definitions:
+ - Token GenesisGroup 0xBFfB152b9392e38CdDc275D818a3Db7FE364596b
+ - Function purchase GenesisGroup purchase(address,uint256):payable
+
+inputs:
+ - ETHER: suppliedEther
+
+actions:
+ - GenesisGroup balanceOf wallet => initialFGEN
+ - GenesisGroup purchase:suppliedEther wallet suppliedEther
+ - GenesisGroup balanceOf wallet => finalFGEN
+
+operations:
+ - finalFGEN - initialFGEN => receivedFGEN
+
+outputs:
+ - GenesisGroup: receivedFGEN
+
+associations:
+
+description: "Purchase ${receivedFGEN:GenesisGroup.decimals} FGEN, redeemable for genesis Fei, using ${suppliedEther:ETHER.decimals} Ether"
