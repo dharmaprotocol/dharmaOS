@@ -7,10 +7,23 @@ variables:
   value: uint256
   data: bytes
 
+results:
+
+definitions:
+
+inputs:
+ - ETHER: value
+
 actions:
  - raw:
     to: to
     value: value
     data: data
 
-description: "Send transaction"
+operations:
+
+outputs:
+
+associations:
+
+description: "Send ${value:ETHER.decimals} ETH transaction with data to ${to}"
