@@ -1,12 +1,12 @@
 {
-  "name": "action-scripts",
-  "version": "0.1.2",
+  "name": "dharma-os",
+  "version": "0.1.3",
   "description": "A collection of \"Action Scripts\" for execution via the Dharma Smart Wallet.",
   "main": "index.js",
   "repository": "https://github.com/dharmaprotocol/action-scripts",
   "author": "@0age + @carlosflrs",
   "license": "MIT",
-  "private": true,
+  "private": false,
   "scripts": {
     "build": "npx hardhat compile && node src/validate.js",
     "test": "node src/validateTests.js && npx hardhat test",
