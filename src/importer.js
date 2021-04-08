@@ -29,6 +29,16 @@ class Importer {
         return importer.parseActionScript(name);
     }
 
+    static importActionScriptTestsFromFile() {
+        const importer = new Importer();
+        return importer.parseActionScriptTests();
+    }
+
+    static importActionScriptTestFromFile(name) {
+        const importer = new Importer();
+        return importer.parseActionScriptTest(name);
+    }
+
     // Note: name, summary, actions and description are all required!
     static TOP_LEVEL_DEFAULTS = {
         variables: {},
@@ -40,6 +50,13 @@ class Importer {
         associations: [],
     };
 
+    static TEST_LEVEL_DEFAULTS = {
+        success: true,
+        variables: {},
+        results: {},
+        events: [],
+    };
+
     getFilePaths(dir) {
         const dirents = fs.readdirSync(dir, { withFileTypes: true });
         const files = dirents.map((dirent) => {
@@ -49,21 +66,29 @@ class Importer {
         return files.flat();
     }
 
-    parseActionScriptByPath([name, filepath]) {
-        const actionScriptCategory = path.basename(path.dirname(filepath));
+    static checkCategory(filepath, rootCategory) {
+        const category = path.basename(path.dirname(filepath));
 
-        if (actionScriptCategory === "action-scripts") {
+        if (category === rootCategory) {
+            const readableCategory = rootCategory
+                .charAt(0)
+                .toUpperCase()
+                .concat(rootCategory.slice(1))
+                .replace("-", " ");
+
             throw new Error(
-                "Action scripts cannot be placed at the root level of the /action-scripts directory"
+                `${readableCategory} cannot be placed at the root level of the /${rootCategory} directory`
             );
         }
+    }
 
+    static parseFileAndApplyDefaults(name, filepath, isTest = false) {
         let file;
         try {
             file = fs.readFileSync(filepath, "utf8");
         } catch (error) {
             throw new Error(
-                `Could not locate action script for "${name}" — ${error.message}`
+                `Could not locate action script ${isTest ? "test " : ""}for "${name}" — ${error.message}`
             );
         }
 
@@ -83,7 +108,7 @@ class Importer {
         }
 
         for (let [field, defaultValue] of Object.entries(
-            Importer.TOP_LEVEL_DEFAULTS
+            !isTest ? Importer.TOP_LEVEL_DEFAULTS : Importer.TEST_LEVEL_DEFAULTS
         )) {
             if (!(field in parsed) || parsed[field] === null) {
                 parsed[field] = defaultValue;
@@ -93,28 +118,41 @@ class Importer {
         return parsed;
     }
 
-    locateRelevantFilepaths() {
+    parseActionScriptByPath([name, filepath]) {
+        Importer.checkCategory(filepath, "action-scripts");
+
+        return Importer.parseFileAndApplyDefaults(name, filepath);
+    }
+
+    parseActionScriptTestByPath([name, filepath]) {
+        Importer.checkCategory(filepath, "action-script-tests");
+
+        return Importer.parseFileAndApplyDefaults(name, filepath, true);
+    }
+
+    locateRelevantFilepaths(category) {
         const filePaths = this.getFilePaths(
-            path.resolve(__dirname, "../action-scripts")
+            path.resolve(__dirname, `../${category}`)
         );
 
-        this.relevantFilepaths = filePaths
+        this.relevantFilepaths = {};
+        this.relevantFilepaths[category] = filePaths
             .map((x) => [path.basename(x, ".yaml"), x])
             .filter((x) => x[0] !== ".DS_Store");
     }
 
     parseActionScripts() {
-        this.locateRelevantFilepaths();
+        this.locateRelevantFilepaths('action-scripts');
 
-        return this.relevantFilepaths.map(
+        return this.relevantFilepaths['action-scripts'].map(
             this.parseActionScriptByPath
         );
     }
 
     parseActionScript(name) {
-        this.locateRelevantFilepaths();
+        this.locateRelevantFilepaths('action-scripts');
 
-        const relevantFilepath = this.relevantFilepaths.filter(
+        const relevantFilepath = this.relevantFilepaths['action-scripts'].filter(
             ([filename, filepath]) => filename === name
         );
         if (relevantFilepath.length === 0) {
@@ -123,6 +161,28 @@ class Importer {
             );
         }
         return this.parseActionScriptByPath(relevantFilepath[0]);
+    }
+
+    parseActionScriptTests() {
+        this.locateRelevantFilepaths('action-script-tests');
+
+        return this.relevantFilepaths['action-script-tests'].map(
+            this.parseActionScriptTestByPath
+        );
+    }
+
+    parseActionScriptTest(name) {
+        this.locateRelevantFilepaths('action-script-tests');
+
+        const relevantFilepath = this.relevantFilepaths['action-script-tests'].filter(
+            ([filename, filepath]) => filename === name
+        );
+        if (relevantFilepath.length === 0) {
+            throw new Error(
+                `Could not locate action script test with name "${name}"`
+            );
+        }
+        return this.parseActionScriptTestByPath(relevantFilepath[0]);
     }
 }
 
