@@ -1,3 +1,4 @@
+const { Importer } = require("./importer");
 const { Validator } = require("./validator");
 const hre = require("hardhat");
 const ethers = hre.ethers;
@@ -580,7 +581,9 @@ class Encoder {
     }
 
     async constructCallsAndResultsFormat() {
-        const script = await Validator.getActionScript(this.actionScriptName);
+        const script = await Validator.getActionScriptAndDetermineIfAdvanced(
+            this.actionScriptName
+        );
 
         this.calls = [];
         this.callABIs = [];
@@ -680,7 +683,7 @@ class Encoder {
     }
 
     async parseActionScriptDefinitions() {
-        const script = await Validator.getActionScript(this.actionScriptName);
+        const script = await Importer.getActionScript(this.actionScriptName);
         const definitions = script.definitions || [];
 
         this.targetContracts = {};

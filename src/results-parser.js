@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 const ethers = hre.ethers;
-const { Validator } = require("./validator.js");
+const { Validator } = require("./validator");
 
 class ResultsParser {
     constructor(args) {
@@ -24,7 +24,9 @@ class ResultsParser {
     }
 
     async parse() {
-        this.script = await Validator.getActionScript(this.actionScriptName);
+        this.script = await Validator.getActionScriptAndDetermineIfAdvanced(
+            this.actionScriptName
+        );
 
         let success;
         let rawResults;

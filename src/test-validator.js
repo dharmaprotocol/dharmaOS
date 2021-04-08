@@ -3,6 +3,7 @@ const path = require("path");
 const YAML = require("yaml");
 const sha3 = require("js-sha3");
 const { Validator } = require("./validator");
+const { Importer } = require("./importer");
 
 class TestValidator {
     static call() {
@@ -143,9 +144,7 @@ class TestValidator {
             .filter((x) => x[0] !== ".DS_Store")
             .map(this.parseActionScriptTestByPath);
 
-        const validator = new Validator();
-        validator.parseActionScripts();
-        this.actionScripts = validator.actionScripts;
+        this.actionScripts = Importer.importActionScriptsFromFile();
     }
 
     validateActionScriptTests() {
