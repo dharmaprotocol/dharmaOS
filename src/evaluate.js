@@ -3,7 +3,7 @@ const path = require("path");
 const hre = require("hardhat");
 const ethers = hre.ethers;
 const axios = require("axios");
-const { Validator } = require("./validator");
+const { Importer } = require("./importer");
 const { Encoder } = require("./encoder");
 const { ResultsParser } = require("./results-parser");
 
@@ -441,7 +441,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
     const Wallet = await ethers.getContractFactory("Wallet");
     const wallet = await Wallet.deploy(signer.address);
 
-    const actionScript = await Validator.getActionScript(actionScriptName);
+    const actionScript = await Importer.getActionScript(actionScriptName);
     const { definitions, inputs } = actionScript;
 
     const tokenDefinitions = Object.fromEntries(

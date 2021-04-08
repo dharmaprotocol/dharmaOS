@@ -3,6 +3,7 @@ const path = require("path");
 const ethers = require("hardhat").ethers;
 const YAML = require("yaml");
 const inquirer = require("inquirer");
+const { Importer } = require("./importer");
 const { Validator } = require("./validator");
 const { TestValidator } = require("./test-validator");
 const { evaluate } = require("./evaluate");
@@ -19,7 +20,7 @@ const generateSinglePassingTest = async ({
 
     let testName = actionScriptTestName;
     if (testName === null) {
-        const { summary } = await Validator.getActionScript(actionScriptName);
+        const { summary } = await Importer.getActionScript(actionScriptName);
         testName = summary;
     }
 

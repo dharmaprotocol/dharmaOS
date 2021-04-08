@@ -1,13 +1,11 @@
-const fs = require("fs");
-const path = require("path");
-const YAML = require("yaml");
 const sha3 = require("js-sha3");
-const { Validator } = require("./validator");
+const { Importer } = require("./importer");
 
 class TestValidator {
     static call() {
         const testValidator = new TestValidator();
-        testValidator.parseActionScriptTests();
+        testValidator.actionScriptTests = Importer.importActionScriptTestsFromFile();
+        testValidator.actionScripts = Importer.importActionScriptsFromFile();
         testValidator.validateActionScriptTests();
         testValidator.generateScenarios();
         return testValidator.scenarios;
@@ -74,79 +72,6 @@ class TestValidator {
     };
 
     static RESERVED_KEYWORDS = new Set(["wallet", "ETHER"]);
-
-    getFilePaths(dir) {
-        const dirents = fs.readdirSync(dir, { withFileTypes: true });
-        const files = dirents.map((dirent) => {
-            const res = path.resolve(dir, dirent.name);
-            return dirent.isDirectory() ? this.getFilePaths(res) : res;
-        });
-        return files.flat();
-    }
-
-    parseActionScriptTestByPath([name, filepath]) {
-        let file;
-        try {
-            file = fs.readFileSync(filepath, "utf8");
-        } catch (error) {
-            throw new Error(
-                `Could not locate action script test for "${name}" — ${error.message}`
-            );
-        }
-
-        let parsed;
-        try {
-            parsed = YAML.parse(file);
-        } catch (error) {
-            throw new Error(
-                `Could not parse "${name}" action script test — ${error.message}`
-            );
-        }
-
-        if (!parsed || !("name" in parsed) || parsed.name !== name) {
-            throw new Error(
-                `Could not locate "name: ${name}" in the action script tests with a corresponding file name`
-            );
-        }
-
-        if (
-            !(
-                "tests" in parsed &&
-                TestValidator.TYPE_CHECKERS.array(parsed.tests)
-            )
-        ) {
-            throw new Error(
-                `Could not locate "tests" top-level field in the "${name}" action script test`
-            );
-        }
-
-        for (let test of parsed.tests) {
-            for (let [field, defaultValue] of Object.entries(
-                TestValidator.TEST_LEVEL_DEFAULTS
-            )) {
-                if (!(field in test) || test[field] === null) {
-                    test[field] = defaultValue;
-                }
-            }
-        }
-
-        return parsed;
-    }
-
-    parseActionScriptTests() {
-        const filePaths = this.getFilePaths(
-            path.resolve(__dirname, "../action-script-tests")
-        );
-
-        this.actionScriptTests = filePaths
-            .map((x) => [path.basename(x, ".yaml"), x])
-            .filter((x) => x[0] !== ".DS_Store")
-            .map(this.parseActionScriptTestByPath);
-
-        const validator = new Validator();
-        validator.parseActionScripts();
-        this.actionScripts = validator.actionScripts;
-    }
 
     validateActionScriptTests() {
         const names = this.actionScriptTests.map((script) => script.name);
@@ -330,7 +255,7 @@ class TestValidator {
 
     static ensureValidChecksum(address) {
         if (
-            !Validator.TYPE_CHECKERS.string(address) ||
+            !TestValidator.TYPE_CHECKERS.string(address) ||
             !address.match(/^0x[0-9A-Fa-f]*$/) ||
             address.length !== 42
         ) {

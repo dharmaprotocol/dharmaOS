@@ -1,23 +1,34 @@
-const fs = require("fs");
-const path = require("path");
-const YAML = require("yaml");
 const sha3 = require("js-sha3");
+const { Importer } = require("./importer");
+const { Exporter } = require("./exporter");
 
 class Validator {
     static async call() {
+        const actionScripts = await Importer.getActionScripts();
+
         const validator = new Validator();
-        await validator.parseActionScripts();
+        validator.setActionScripts(actionScripts);
+
         validator.validateActionScripts();
-        await validator.writeActionScripts();
-        return validator.actionScripts;
+
+        await Exporter.setActionScripts(validator.actionScripts);
+
+        return validator.actionScripts.map(
+            script => ({
+                ...script,
+                isAdvanced: !!validator.advancedScripts.has(script.name),
+            })
+        );
     }
 
-    static async getActionScript(name) {
+    static async getActionScriptAndDetermineIfAdvanced(actionScriptName) {
+        const actionScript = await Importer.getActionScript(actionScriptName);
+
         const validator = new Validator();
-        await validator.parseActionScripts();
-        const script = validator.getActionScriptAfterParsing(name);
-        const isAdvanced = validator.validateActionScript(script);
-        return {...script, isAdvanced};
+        validator.setActionScript(actionScript);
+
+        const isAdvanced = validator.validateActionScript(actionScript);
+        return {...actionScript, isAdvanced};
     }
 
     getActionScriptAfterParsing(name) {
@@ -93,92 +104,30 @@ class Validator {
         data: "bytes",
     };
 
-    // Note: name, summary, actions and description are all required!
-    static TOP_LEVEL_DEFAULTS = {
-        variables: {},
-        results: {},
-        definitions: [],
-        inputs: [],
-        operations: [],
-        outputs: [],
-        associations: [],
-    };
-
     static RESERVED_KEYWORDS = new Set(["wallet", "ETHER"]);
 
     static RESERVED_ACTION_SCRIPT_NAMES = { SEND_TRANSACTION: "SEND_TRANSACTION" };
 
-    getFilePaths(dir) {
-        const dirents = fs.readdirSync(dir, { withFileTypes: true });
-        const files = dirents.map((dirent) => {
-            const res = path.resolve(dir, dirent.name);
-            return dirent.isDirectory() ? this.getFilePaths(res) : res;
-        });
-        return files.flat();
+    setActionScript(actionScript) {
+        if (!this.actionScripts) {
+            this.actionScripts = [actionScript];
+        } else {
+            this.actionScripts = this.actionScripts.push(actionScript);
+        }
+
+        const names = this.actionScripts.map((script) => script.name);
+        this.namesSet = new Set(names);
+        if (this.namesSet.size !== names.length) {
+            throw new Error("All action scripts must have a unique name");
+        }
     }
 
-    parseActionScriptByPath([name, filepath]) {
-        let file;
-        try {
-            file = fs.readFileSync(filepath, "utf8");
-        } catch (error) {
-            throw new Error(
-                `Could not locate action script for "${name}" — ${error.message}`
-            );
+    setActionScripts(actionScripts) {
+        if (!this.actionScripts) {
+            this.actionScripts = actionScripts;
+        } else {
+            this.actionScripts = this.actionScripts.concat(actionScripts);
         }
-
-        let parsed;
-        try {
-            parsed = YAML.parse(file);
-        } catch (error) {
-            throw new Error(
-                `Could not parse "${name}" action script — ${error.message}`
-            );
-        }
-
-        if (!parsed || !("name" in parsed) || parsed.name !== name) {
-            throw new Error(
-                `Could not locate "name: ${name}" in the action script with a corresponding file name`
-            );
-        }
-
-        for (let [field, defaultValue] of Object.entries(
-            Validator.TOP_LEVEL_DEFAULTS
-        )) {
-            if (!(field in parsed) || parsed[field] === null) {
-                parsed[field] = defaultValue;
-            }
-        }
-
-        return parsed;
-    }
-
-    parseActionScripts() {
-        const filePaths = this.getFilePaths(
-            path.resolve(__dirname, "../action-scripts")
-        );
-
-        const relevantFilepaths = filePaths
-            .map((x) => [path.basename(x, ".yaml"), x])
-            .filter((x) => x[0] !== ".DS_Store");
-
-        this.actionScriptCategories = relevantFilepaths.map((x) =>
-            path.basename(path.dirname(x[1]))
-        );
-
-        if (
-            this.actionScriptCategories.some(
-                (category) => category === "action-scripts"
-            )
-        ) {
-            throw new Error(
-                "Action scripts cannot be placed at the root level of the /action-scripts directory"
-            );
-        }
-
-        this.actionScripts = relevantFilepaths.map(
-            this.parseActionScriptByPath
-        );
 
         const names = this.actionScripts.map((script) => script.name);
         this.namesSet = new Set(names);
@@ -194,29 +143,6 @@ class Validator {
             if (isAdvanced) {
                 this.advancedScripts.add(script.name);
             }
-        }
-    }
-
-    async writeActionScripts() {
-        const buildDir = path.resolve(__dirname, "../build");
-        try {
-            await fs.promises.mkdir(buildDir);
-        } catch (e) {}
-
-        for (const script of this.actionScripts) {
-            const { name } = script;
-            delete script.variables.wallet;
-            const scriptJSON = JSON.stringify(script, null, 2);
-            fs.writeFile(
-                path.resolve(buildDir, `${name}.json`),
-                scriptJSON,
-                "utf8",
-                (err) => {
-                    if (err) {
-                        console.error(err);
-                    }
-                }
-            );
         }
     }
 
