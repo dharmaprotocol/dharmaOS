@@ -31,6 +31,10 @@ class Validator {
         return {...actionScript, isAdvanced};
     }
 
+    static isAdvanced(actionScript) {
+        return Validator.validateActions(actionScript, false);
+    }
+
     getActionScriptAfterParsing(name) {
         const actionScriptOptions = this.actionScripts.filter(
             (script) => script.name === name
@@ -705,7 +709,7 @@ class Validator {
         }
     }
 
-    static validateActions(actionScript) {
+    static validateActions(actionScript, validateAllActions = true) {
         const { actions } = actionScript;
         let isAdvanced = false;
         let callResultVariables = new Set();
@@ -734,6 +738,9 @@ class Validator {
             }
             if (!!hasAdvanced) {
                 isAdvanced = true;
+                if (!validateAllActions) {
+                    break;
+                }
             }
         }
 
