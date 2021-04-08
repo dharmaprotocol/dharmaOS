@@ -662,31 +662,44 @@ async function evaluate(actionScriptName, variables, blockNumber) {
         }
     }
 
-    const encoder = new Encoder(actionScript, variables, wallet.address);
-    await encoder.parseActionScriptDefinitions();
-    await encoder.constructCallsAndResultsFormat();
+    const encoderArgs = {
+        actionScript,
+        variables,
+        wallet: wallet.address,
+    };
 
-    const simulateTarget = !encoder.isAdvanced ? 'simulate' : 'simulateAdvanced';
-    const callResults = await wallet.callStatic[simulateTarget](encoder.calls);
+    const {
+        calls,
+        callABIs,
+        resultToParse,
+        isAdvanced
+    } = await Encoder.encode(encoderArgs);
+
+    const simulateTarget = !isAdvanced ? 'simulate' : 'simulateAdvanced';
+    const callResults = await wallet.callStatic[simulateTarget](calls);
 
     const parserArgs = {
         actionScript,
-        calls: encoder.calls,
+        calls,
         callResults,
-        callABIs: encoder.callABIs,
-        resultToParse: encoder.resultToParse,
+        callABIs,
+        resultToParse,
         contract: wallet,
         variables,
+        isAdvanced,
     };
 
-    const resultsParser = new ResultsParser(parserArgs);
-
-    const { success, results, revertReason, parsedReturnData } = await resultsParser.parse();
+    const {
+        success,
+        results,
+        revertReason,
+        parsedReturnData
+    } = await ResultsParser.parse(parserArgs);
 
     let events = {};
     if (!!success) {
-        const executeTarget = !encoder.isAdvanced ? 'execute' : 'executeAdvanced';
-        let execution = await wallet[executeTarget](encoder.calls);
+        const executeTarget = !isAdvanced ? 'execute' : 'executeAdvanced';
+        let execution = await wallet[executeTarget](calls);
         execution = await execution.wait();
         const logs = execution.logs;
 

@@ -1,7 +1,5 @@
-const { Importer } = require("./importer");
 const { Validator } = require("./validator");
-const hre = require("hardhat");
-const ethers = hre.ethers;
+const ethers = require("ethers");
 
 const ERC20_ABI = [
     {
@@ -229,6 +227,31 @@ const ERC20_ABI = [
 const ETHER_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
 class Encoder {
+    static async encode({actionScript, variables, wallet}) {
+        const encoder = new Encoder(actionScript, variables, wallet);
+
+        return encoder.encode();
+    }
+
+    constructor(actionScript, variables, wallet) {
+        this.actionScript = actionScript;
+        this.variables = variables;
+        this.variables["wallet"] = wallet;
+        this.isAdvanced = Validator.isAdvanced(actionScript);
+    }
+
+    async encode() {
+        await this.parseActionScriptDefinitions();
+        await this.constructCallsAndResultsFormat();
+
+        return {
+            calls: this.calls,
+            callABIs: this.callABIs,
+            resultToParse: this.resultToParse,
+            isAdvanced: this.isAdvanced,
+        };
+    }
+
     static typeSizes = (type) => {
         if (!(typeof type === "string")) {
             throw new Error("Types must be formatted as strings.");
@@ -321,22 +344,6 @@ class Encoder {
             }]
         ])
     );
-
-    static async encode(actionScript, variables, wallet) {
-        const encoder = new Encoder(actionScript, variables, wallet);
-
-        await encoder.parseActionScriptDefinitions();
-        await encoder.constructCallsAndResultsFormat();
-
-        return encoder.calls;
-    }
-
-    constructor(actionScript, variables, wallet) {
-        this.actionScript = actionScript;
-        this.variables = variables;
-        this.variables["wallet"] = wallet;
-        this.isAdvanced = Validator.isAdvanced(actionScript);
-    }
 
     constructCallAndResultFormat(action) {
         if (typeof action === 'object' && 'if' in action) {

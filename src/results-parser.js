@@ -1,8 +1,31 @@
-const hre = require("hardhat");
-const ethers = hre.ethers;
+const ethers = require("ethers");
 const { Validator } = require("./validator");
 
 class ResultsParser {
+    static async parse({
+        actionScript,
+        calls,
+        callResults,
+        callABIs,
+        resultToParse,
+        contract,
+        variables,
+        isAdvanced,
+    }) {
+        const resultsParser = new ResultsParser({
+            actionScript,
+            calls,
+            callResults,
+            callABIs,
+            resultToParse,
+            contract,
+            variables,
+            isAdvanced,
+        });
+
+        return resultsParser.parse();
+    }
+
     constructor(args) {
         const {
             actionScript,
@@ -12,6 +35,7 @@ class ResultsParser {
             resultToParse,
             contract,
             variables,
+            isAdvanced,
         } = args;
 
         this.actionScript = actionScript;
@@ -21,7 +45,11 @@ class ResultsParser {
         this.resultToParse = resultToParse;
         this.contract = contract;
         this.variables = variables;
-        this.isAdvanced = Validator.isAdvanced(actionScript);
+        this.isAdvanced = (
+            typeof isAdvanced === "boolean"
+                ? isAdvanced
+                : Validator.isAdvanced(actionScript)
+        );
     }
 
     async parse() {
