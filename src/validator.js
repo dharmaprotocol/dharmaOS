@@ -1,8 +1,6 @@
-const fs = require("fs");
-const path = require("path");
-const YAML = require("yaml");
 const sha3 = require("js-sha3");
 const { Importer } = require("./importer");
+const { Exporter } = require("./exporter");
 
 class Validator {
     static async call() {
@@ -10,9 +8,10 @@ class Validator {
 
         const validator = new Validator();
         validator.setActionScripts(actionScripts);
+
         validator.validateActionScripts();
 
-        await validator.writeActionScripts();
+        await Exporter.setActionScripts(validator.actionScripts);
 
         return validator.actionScripts.map(
             script => ({
@@ -144,29 +143,6 @@ class Validator {
             if (isAdvanced) {
                 this.advancedScripts.add(script.name);
             }
-        }
-    }
-
-    async writeActionScripts() {
-        const buildDir = path.resolve(__dirname, "../build");
-        try {
-            await fs.promises.mkdir(buildDir);
-        } catch (e) {}
-
-        for (const script of this.actionScripts) {
-            const { name } = script;
-            delete script.variables.wallet;
-            const scriptJSON = JSON.stringify(script, null, 2);
-            fs.writeFile(
-                path.resolve(buildDir, `${name}.json`),
-                scriptJSON,
-                "utf8",
-                (err) => {
-                    if (err) {
-                        console.error(err);
-                    }
-                }
-            );
         }
     }
 
