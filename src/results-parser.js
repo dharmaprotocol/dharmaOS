@@ -5,7 +5,7 @@ const { Validator } = require("./validator");
 class ResultsParser {
     constructor(args) {
         const {
-            actionScriptName,
+            actionScript,
             calls,
             callResults,
             callABIs,
@@ -14,23 +14,20 @@ class ResultsParser {
             variables,
         } = args;
 
-        this.actionScriptName = actionScriptName;
+        this.actionScript = actionScript;
         this.calls = calls;
         this.callResults = callResults;
         this.callABIs = callABIs;
         this.resultToParse = resultToParse;
         this.contract = contract;
         this.variables = variables;
+        this.isAdvanced = Validator.isAdvanced(actionScript);
     }
 
     async parse() {
-        this.script = await Validator.getActionScriptAndDetermineIfAdvanced(
-            this.actionScriptName
-        );
-
         let success;
         let rawResults;
-        if (!this.script.isAdvanced) {
+        if (!this.isAdvanced) {
             const { ok, returnData } = this.callResults;
 
             success = ok.every((x) => x);
@@ -81,7 +78,7 @@ class ResultsParser {
         }
 
         // run operations
-        const operations = this.script.operations || [];
+        const operations = this.actionScript.operations || [];
 
         for (let operation of operations) {
             const [input, output] = operation.split(" => ");
@@ -98,7 +95,7 @@ class ResultsParser {
         }
 
         const finalResults = {};
-        const expectedResults = this.script.results || {};
+        const expectedResults = this.actionScript.results || {};
         for (let expectedResult of Object.keys(expectedResults)) {
             if (expectedResult in parsedResults) {
                 finalResults[expectedResult] = parsedResults[expectedResult];

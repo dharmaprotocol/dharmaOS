@@ -662,7 +662,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
         }
     }
 
-    const encoder = new Encoder(actionScriptName, variables, wallet.address);
+    const encoder = new Encoder(actionScript, variables, wallet.address);
     await encoder.parseActionScriptDefinitions();
     await encoder.constructCallsAndResultsFormat();
 
@@ -670,7 +670,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
     const callResults = await wallet.callStatic[simulateTarget](encoder.calls);
 
     const parserArgs = {
-        actionScriptName,
+        actionScript,
         calls: encoder.calls,
         callResults,
         callABIs: encoder.callABIs,

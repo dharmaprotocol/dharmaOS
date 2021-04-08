@@ -322,18 +322,20 @@ class Encoder {
         ])
     );
 
-    static async encode(actionScriptName, variables, wallet) {
-        const encoder = new Encoder(actionScriptName, variables, wallet);
+    static async encode(actionScript, variables, wallet) {
+        const encoder = new Encoder(actionScript, variables, wallet);
+
         await encoder.parseActionScriptDefinitions();
         await encoder.constructCallsAndResultsFormat();
 
         return encoder.calls;
     }
 
-    constructor(actionScriptName, variables, wallet) {
-        this.actionScriptName = actionScriptName;
+    constructor(actionScript, variables, wallet) {
+        this.actionScript = actionScript;
         this.variables = variables;
         this.variables["wallet"] = wallet;
+        this.isAdvanced = Validator.isAdvanced(actionScript);
     }
 
     constructCallAndResultFormat(action) {
@@ -581,16 +583,11 @@ class Encoder {
     }
 
     async constructCallsAndResultsFormat() {
-        const script = await Validator.getActionScriptAndDetermineIfAdvanced(
-            this.actionScriptName
-        );
-
         this.calls = [];
         this.callABIs = [];
         this.resultToParse = {};
-        this.isAdvanced = script.isAdvanced;
 
-        const { actions, definitions } = script;
+        const { actions, definitions } = this.actionScript;
 
         this.callArgumentsByFunction = {};
         this.callResultsByFunction = {};
@@ -683,8 +680,7 @@ class Encoder {
     }
 
     async parseActionScriptDefinitions() {
-        const script = await Importer.getActionScript(this.actionScriptName);
-        const definitions = script.definitions || [];
+        const definitions = this.actionScript.definitions || [];
 
         this.targetContracts = {};
         this.targetFunctions = {
