@@ -2,6 +2,24 @@ const fs = require("fs");
 const path = require("path");
 const YAML = require("yaml");
 
+// Note: name, summary, actions and description are all required!
+const TOP_LEVEL_DEFAULTS = {
+    variables: {},
+    results: {},
+    definitions: [],
+    inputs: [],
+    operations: [],
+    outputs: [],
+    associations: [],
+};
+
+const TEST_LEVEL_DEFAULTS = {
+    success: true,
+    variables: {},
+    results: {},
+    events: [],
+};
+
 class Importer {
     static async getActionScripts() {
         if (process.env.ACTION_SCRIPT_SOURCE) {
@@ -38,24 +56,6 @@ class Importer {
         const importer = new Importer();
         return importer.parseActionScriptTest(name);
     }
-
-    // Note: name, summary, actions and description are all required!
-    static TOP_LEVEL_DEFAULTS = {
-        variables: {},
-        results: {},
-        definitions: [],
-        inputs: [],
-        operations: [],
-        outputs: [],
-        associations: [],
-    };
-
-    static TEST_LEVEL_DEFAULTS = {
-        success: true,
-        variables: {},
-        results: {},
-        events: [],
-    };
 
     getFilePaths(dir) {
         const dirents = fs.readdirSync(dir, { withFileTypes: true });
@@ -108,7 +108,7 @@ class Importer {
         }
 
         for (let [field, defaultValue] of Object.entries(
-            !isTest ? Importer.TOP_LEVEL_DEFAULTS : Importer.TEST_LEVEL_DEFAULTS
+            !isTest ? TOP_LEVEL_DEFAULTS : TEST_LEVEL_DEFAULTS
         )) {
             if (!(field in parsed) || parsed[field] === null) {
                 parsed[field] = defaultValue;

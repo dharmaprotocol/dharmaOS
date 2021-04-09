@@ -226,6 +226,44 @@ const ERC20_ABI = [
 
 const ETHER_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
+const ERC20_CALL_ARGUMENTS = [
+    ['transfer', ['address', 'uint256']],
+    ['transferFrom', ['address', 'address', 'uint256']],
+    ['approve', ['address', 'uint256']],
+    ['allowance', ['address', 'address']],
+    ['balanceOf', ['address']],
+    ['totalSupply', []]
+].map(([functionName, functionArguments]) => [
+    functionName,
+    functionArguments.map((type, i) => ({
+        type,
+        size: 32,
+        offset: 4 + 32 * i
+    }))
+]).reduce(
+    (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+    {}
+);
+
+const ERC20_CALL_RESULTS = [
+    'transfer',
+    'transferFrom',
+    'approve',
+    'allowance',
+    'balanceOf',
+    'totalSupply'
+].map(functionName => [
+    functionName,
+    [{
+        type: functionName.includes('l') ? 'uint256' : 'bool',
+        size: 32,
+        offset: 0
+    }]
+]).reduce(
+    (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+    {}
+);
+
 class Encoder {
     static async encode({actionScript, variables, wallet}) {
         const encoder = new Encoder(actionScript, variables, wallet);
@@ -252,7 +290,7 @@ class Encoder {
         };
     }
 
-    static typeSizes = (type) => {
+    static typeSizes(type) {
         if (!(typeof type === "string")) {
             throw new Error("Types must be formatted as strings.");
         }
@@ -272,7 +310,7 @@ class Encoder {
         return 32;
     }
 
-    static typeZeroPaddings = (type) => {
+    static typeZeroPaddings(type) {
         if (!(typeof type === "string")) {
             throw new Error("Types must be formatted as strings.");
         }
@@ -308,42 +346,6 @@ class Encoder {
 
         throw new Error(`Zero-padding for type "${type}" not yet implemented!`);
     }
-
-    static erc20CallArguments = Object.fromEntries(
-        [
-            ['transfer', ['address', 'uint256']],
-            ['transferFrom', ['address', 'address', 'uint256']],
-            ['approve', ['address', 'uint256']],
-            ['allowance', ['address', 'address']],
-            ['balanceOf', ['address']],
-            ['totalSupply', []]
-        ].map(([functionName, functionArguments]) => [
-            functionName,
-            functionArguments.map((type, i) => ({
-                type,
-                size: 32,
-                offset: 4 + 32 * i
-            }))
-        ])
-    );
-
-    static erc20CallResults = Object.fromEntries(
-        [
-            'transfer',
-            'transferFrom',
-            'approve',
-            'allowance',
-            'balanceOf',
-            'totalSupply'
-        ].map(functionName => [
-            functionName,
-            [{
-                type: functionName.includes('l') ? 'uint256' : 'bool',
-                size: 32,
-                offset: 0
-            }]
-        ])
-    );
 
     constructCallAndResultFormat(action) {
         if (typeof action === 'object' && 'if' in action) {
@@ -623,59 +625,61 @@ class Encoder {
                 );
             }
 
-            const definitionCallArguments = Object.fromEntries(
-                definitions
-                    .filter(definition => definition.startsWith("Function "))
-                    .map(definition => {
-                        const functionName = definition.split(' ')[1];
-                        const callArgumentTypes = definition.split(' ')[3] === 'fallback'
-                            ? []
-                            : definition
-                                .split(" => ")[0]
-                                .replace(":payable", "")
-                                .split("(")[1]
-                                .slice(0, -1)
-                                .split(",")
-                                .filter(x => x)
-                                .map(x => x.trim(" "));
+            const definitionCallArguments = definitions
+                .filter(definition => definition.startsWith("Function "))
+                .map(definition => {
+                    const functionName = definition.split(' ')[1];
+                    const callArgumentTypes = definition.split(' ')[3] === 'fallback'
+                        ? []
+                        : definition
+                            .split(" => ")[0]
+                            .replace(":payable", "")
+                            .split("(")[1]
+                            .slice(0, -1)
+                            .split(",")
+                            .filter(x => x)
+                            .map(x => x.trim(" "));
 
-                        return [
-                            functionName,
-                            getSizesAndOffsetsFromTypes(
-                                callArgumentTypes,
-                                true
-                            )
-                        ];
-                    })
-            );
+                    return [
+                        functionName,
+                        getSizesAndOffsetsFromTypes(
+                            callArgumentTypes,
+                            true
+                        )
+                    ];
+                }).reduce(
+                    (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+                    {}
+                );
 
             this.callArgumentsByFunction = {
                 ...definitionCallArguments,
-                ...Encoder.erc20CallArguments
+                ...ERC20_CALL_ARGUMENTS
             };
 
-            const definitionCallResults = Object.fromEntries(
-                definitions
-                    .filter(definition => definition.startsWith("Function "))
-                    .map(definition => {
-                        const functionName = definition.split(' ')[1];
-                        const callReturnTypes = (definition.split(' => ')[1] || '')
-                            .split(' ')
-                            .filter(x => x);
+            const definitionCallResults = definitions
+                .filter(definition => definition.startsWith("Function "))
+                .map(definition => {
+                    const functionName = definition.split(' ')[1];
+                    const callReturnTypes = (definition.split(' => ')[1] || '')
+                        .split(' ')
+                        .filter(x => x);
 
-                        return [
-                            functionName,
-                            getSizesAndOffsetsFromTypes(
-                                callReturnTypes,
-                                false
-                            )
-                        ];
-                    })
-            );
+                    return [
+                        functionName,
+                        getSizesAndOffsetsFromTypes(
+                            callReturnTypes,
+                            false
+                        )
+                    ];
+                }).reduce(
+                    (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+                    {}
+                );
 
             this.callResultsByFunction = {
                 ...definitionCallResults,
-                ...Encoder.erc20CallResults
+                ...ERC20_CALL_RESULTS
             };
         }
 
@@ -837,8 +841,8 @@ class Encoder {
             }
         }
 
-        this.contracts = Object.fromEntries(
-            Object.entries(this.targetContracts).map(([name, value]) => {
+        this.contracts = Object.entries(this.targetContracts).map(
+            ([name, value]) => {
                 return [
                     name,
                     new ethers.Contract(
@@ -847,7 +851,10 @@ class Encoder {
                         ethers.provider
                     ),
                 ];
-            })
+            }
+        ).reduce(
+            (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+            {}
         );
     }
 }

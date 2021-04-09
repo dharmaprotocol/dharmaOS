@@ -2,6 +2,70 @@ const sha3 = require("js-sha3");
 const { Importer } = require("./importer");
 const { Exporter } = require("./exporter");
 
+const TYPE_CHECKERS = {
+    string: (x) => x && (typeof x === "string" || x instanceof String),
+    array: (x) => x && Array.isArray(x) && typeof x === "object",
+    object: (x) => x && !Array.isArray(x) && typeof x === "object",
+    conditionalObject: (x) => x && !Array.isArray(x) && typeof x === "object" && "if" in x,
+    rawObject: (x) => x && !Array.isArray(x) && typeof x === "object" && "raw" in x,
+};
+
+const VALID_VARIABLE_TYPES = new Set([
+    "address",
+    "uint256",
+    "bool",
+    "bytes32",
+    "uint8",
+    "uint16",
+    "int128",
+    "bytes"
+]);
+
+const INPUT_SELECTORS = new Set([
+    "0xa9059cbb", // transfer
+    "0x095ea7b3", // approve
+]);
+
+// TODO: validate outputs as well?
+const ERC20_FUNCTIONS = {
+    transfer: ["address", "uint256"],
+    transferFrom: ["address", "address", "uint256"],
+    approve: ["address", "uint256"],
+    allowance: ["address"],
+    balanceOf: ["address"],
+    totalSupply: [],
+};
+
+const TOP_LEVEL_FIELDS_AND_TYPES = {
+    name: "string",
+    summary: "string",
+    variables: "object",
+    results: "object",
+    definitions: "array",
+    inputs: "array",
+    actions: "array",
+    operations: "array",
+    outputs: "array",
+    associations: "array",
+    description: "string",
+};
+
+const CONDITIONAL_FIELDS_AND_TYPES = {
+    condition: "string",
+    then: "array",
+    else: "array",
+};
+
+const RAW_FIELDS_AND_TYPES = {
+    to: "address",
+    value: "uint256",
+    data: "bytes",
+};
+
+const RESERVED_KEYWORDS = new Set(["wallet", "ETHER"]);
+
+const RESERVED_ACTION_SCRIPT_NAMES = { SEND_TRANSACTION: "SEND_TRANSACTION" };
+
 class Validator {
     static async call() {
         const actionScripts = await Importer.getActionScripts();
@@ -48,70 +112,6 @@ class Validator {
         return actionScript;
     }
 
-    static TYPE_CHECKERS = {
-        string: (x) => x && (typeof x === "string" || x instanceof String),
-        array: (x) => x && Array.isArray(x) && typeof x === "object",
-        object: (x) => x && !Array.isArray(x) && typeof x === "object",
-        conditionalObject: (x) => x && !Array.isArray(x) && typeof x === "object" && "if" in x,
-        rawObject: (x) => x && !Array.isArray(x) && typeof x === "object" && "raw" in x,
-    };
-
-    static VALID_VARIABLE_TYPES = new Set([
-        "address",
-        "uint256",
-        "bool",
-        "bytes32",
-        "uint8",
-        "uint16",
-        "int128",
-        "bytes"
-    ]);
-
-    static INPUT_SELECTORS = new Set([
-        "0xa9059cbb", // transfer
-        "0x095ea7b3", // approve
-    ]);
-
-    // TODO: validate outputs as well?
-    static ERC20_FUNCTIONS = {
-        transfer: ["address", "uint256"],
-        transferFrom: ["address", "address", "uint256"],
-        approve: ["address", "uint256"],
-        allowance: ["address"],
-        balanceOf: ["address"],
-        totalSupply: [],
-    };
-
-    static TOP_LEVEL_FIELDS_AND_TYPES = {
-        name: "string",
-        summary: "string",
-        variables: "object",
-        results: "object",
-        definitions: "array",
-        inputs: "array",
-        actions: "array",
-        operations: "array",
-        outputs: "array",
-        associations: "array",
-        description: "string",
-    };
-
-    static CONDITIONAL_FIELDS_AND_TYPES = {
-        condition: "string",
-        then: "array",
-        else: "array",
-    };
-
-    static RAW_FIELDS_AND_TYPES = {
-        to: "address",
-        value: "uint256",
-        data: "bytes",
-    };
-
-    static RESERVED_KEYWORDS = new Set(["wallet", "ETHER"]);
-
-    static RESERVED_ACTION_SCRIPT_NAMES = { SEND_TRANSACTION: "SEND_TRANSACTION" };
-
     setActionScript(actionScript) {
         if (!this.actionScripts) {
             this.actionScripts = [actionScript];
@@ -153,9 +153,9 @@ class Validator {
     validateActionScript(actionScript) {
         if (
             !(
-                Validator.TYPE_CHECKERS.object(actionScript) &&
+                TYPE_CHECKERS.object(actionScript) &&
                 "name" in actionScript &&
-                Validator.TYPE_CHECKERS.string(actionScript.name)
+                TYPE_CHECKERS.string(actionScript.name)
             )
         ) {
             throw new Error(
@@ -166,14 +166,14 @@ class Validator {
         const name = actionScript.name;
 
         for (let [field, type] of Object.entries(
-            Validator.TOP_LEVEL_FIELDS_AND_TYPES
+            TOP_LEVEL_FIELDS_AND_TYPES
         )) {
             if (!(field in actionScript)) {
                 throw new Error(
                     `Action script "${name}" must contain a "${field}" field`
                 );
             }
-            if (!Validator.TYPE_CHECKERS[type](actionScript[field])) {
+            if (!TYPE_CHECKERS[type](actionScript[field])) {
                 throw new Error(
                     `Action script "${name}" field "${field}" must be of type "${type}"`
                 );
@@ -181,7 +181,7 @@ class Validator {
         }
 
         const validFields = new Set(
-            Object.keys(Validator.TOP_LEVEL_FIELDS_AND_TYPES)
+            Object.keys(TOP_LEVEL_FIELDS_AND_TYPES)
         );
         for (let field of Object.keys(actionScript)) {
             if (!validFields.has(field)) {
@@ -226,7 +226,7 @@ class Validator {
             ...results,
         });
         for (let [variableName, type] of variablesAndResults) {
-            if (!Validator.VALID_VARIABLE_TYPES.has(type)) {
+            if (!VALID_VARIABLE_TYPES.has(type)) {
                 throw new Error(
                     `Action script "${name}" contains invalid type "${type}" for "${variableName}"`
                 );
@@ -242,7 +242,7 @@ class Validator {
         for (let [i, definition] of Object.entries(definitions)) {
             if (
                 !(
-                    Validator.TYPE_CHECKERS.string(definition) &&
+                    TYPE_CHECKERS.string(definition) &&
                     (definition.startsWith("Token ") ||
                         definition.startsWith("Contract ") ||
                         definition.startsWith("Function ") ||
@@ -276,7 +276,7 @@ class Validator {
             const definitionType = splitDefinition[0];
             const definitionName = splitDefinition[1];
 
-            if (Validator.RESERVED_KEYWORDS.has(definitionName)) {
+            if (RESERVED_KEYWORDS.has(definitionName)) {
                 throw new Error(
                     `Action script "${name}" definition "${definitionName}" uses a reserved keyword`
                 );
@@ -371,7 +371,7 @@ class Validator {
 
         variables.wallet = "address";
 
-        if (!Validator.TYPE_CHECKERS.string(action)) {
+        if (!TYPE_CHECKERS.string(action)) {
             throw new Error(
                 `Action script "${name}" action #${
                     parseInt(index) + 1
@@ -469,9 +469,9 @@ class Validator {
 
         const givenArguments = action.split(" => ")[0].split(" ").slice(2);
         let expectedArgumentTypes;
-        if (actionFunction in Validator.ERC20_FUNCTIONS) {
+        if (actionFunction in ERC20_FUNCTIONS) {
             expectedArgumentTypes =
-                Validator.ERC20_FUNCTIONS[actionFunction];
+                ERC20_FUNCTIONS[actionFunction];
 
             const tokenDefinitionList = definitions
                 .map((definition) => definition.split(" "))
@@ -579,15 +579,17 @@ class Validator {
             definitions
                 .filter((definition) => definition.startsWith("Function"))
                 .map((definition) => definition.split(" ")[1])
-                .concat(Object.keys(Validator.ERC20_FUNCTIONS))
+                .concat(Object.keys(ERC20_FUNCTIONS))
         );
 
-        const definedActions = Object.fromEntries(
-            definitions
-                .filter((definition) => definition.startsWith("Action"))
-                .map((definition) => definition.split(" "))
-                .map(splitDefinition => ([splitDefinition[1], splitDefinition[2]]))
-        );
+        const definedActions = definitions
+            .filter((definition) => definition.startsWith("Action"))
+            .map((definition) => definition.split(" "))
+            .map(splitDefinition => ([splitDefinition[1], splitDefinition[2]]))
+            .reduce(
+                (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+                {}
+            );
 
         return {
             definedTokensAndContracts,
@@ -610,7 +612,7 @@ class Validator {
 
         const conditionalValues = Object.values(action)[0];
         if (
-            !Validator.TYPE_CHECKERS.object(conditionalValues)
+            !TYPE_CHECKERS.object(conditionalValues)
         ) {
             throw new Error(
                 `Action script "${name}" action #${parseInt(index) + 1} supplies an object that is not a conditional ("if" value is not an object)`
@@ -618,7 +620,7 @@ class Validator {
         }
 
         const validFields = new Set(
-            Object.keys(Validator.CONDITIONAL_FIELDS_AND_TYPES)
+            Object.keys(CONDITIONAL_FIELDS_AND_TYPES)
         );
         for (let field of Object.keys(conditionalValues)) {
             if (!validFields.has(field)) {
@@ -629,14 +631,14 @@ class Validator {
         }
 
         for (let [field, type] of Object.entries(
-            Validator.CONDITIONAL_FIELDS_AND_TYPES
+            CONDITIONAL_FIELDS_AND_TYPES
         )) {
             if (!(field in conditionalValues)) {
                 throw new Error(
                     `Action script "${name}" condition (action #${parseInt(index) + 1}) must contain a "${field}" field`
                 );
             }
-            if (!Validator.TYPE_CHECKERS[type](conditionalValues[field])) {
+            if (!TYPE_CHECKERS[type](conditionalValues[field])) {
                 throw new Error(
                     `Action script "${name}" condition (action #${parseInt(index) + 1}) field "${field}" must be of type "${type}"`
                 );
@@ -644,7 +646,7 @@ class Validator {
 
             if (type === 'array') {
                 for (let [conditionalActionIndex, conditionalAction] of Object.entries(conditionalValues[field])) {
-                    if (Validator.TYPE_CHECKERS.object(conditionalAction)) {
+                    if (TYPE_CHECKERS.object(conditionalAction)) {
                         try {
                             [hasAdvanced, callResultVariables] = Validator.validateConditionalAction(
                                 conditionalAction,
@@ -683,7 +685,7 @@ class Validator {
     static validateRawAction(action, index, actionScript) {
         const { name } = actionScript;
 
-        if (name !== Validator.RESERVED_ACTION_SCRIPT_NAMES.SEND_TRANSACTION) {
+        if (name !== RESERVED_ACTION_SCRIPT_NAMES.SEND_TRANSACTION) {
             throw new Error(
                 `Action script "${name}" is not allowed to define a raw object`
             );
@@ -698,7 +700,7 @@ class Validator {
         }
 
         const validFields = new Set(
-            Object.keys(Validator.RAW_FIELDS_AND_TYPES)
+            Object.keys(RAW_FIELDS_AND_TYPES)
         );
         for (let field of Object.keys(action.raw)) {
             if (!validFields.has(field)) {
@@ -715,14 +717,14 @@ class Validator {
         let callResultVariables = new Set();
         for (let [index, action] of Object.entries(actions)) {
             let hasAdvanced;
-            if (Validator.TYPE_CHECKERS.conditionalObject(action)) {
+            if (TYPE_CHECKERS.conditionalObject(action)) {
                 [hasAdvanced, callResultVariables] = Validator.validateConditionalAction(
                     action,
                     index,
                     actionScript,
                     callResultVariables
                 )
-            } else if (Validator.TYPE_CHECKERS.rawObject(action)) {
+            } else if (TYPE_CHECKERS.rawObject(action)) {
                 Validator.validateRawAction(
                     action,
                     index,
@@ -763,7 +765,7 @@ class Validator {
                     .keccak_256(functionSignature)
                     .slice(0, 8)}`;
 
-                if (Validator.INPUT_SELECTORS.has(functionSelector)) {
+                if (INPUT_SELECTORS.has(functionSelector)) {
                     inputFunctions.add(functionName);
                 }
 
@@ -843,18 +845,23 @@ class Validator {
         // Determine each action that is a conditional
         const conditionalActions = [];
         for (let [i, action] of Object.entries(actions)) {
-            if (Validator.TYPE_CHECKERS.conditionalObject(action)) {
+            if (TYPE_CHECKERS.conditionalObject(action)) {
                 conditionalActions.push(i);
             }
         }
 
         // Determine the total number of conditional (else or then) combinations
         const conditionalCombinations = [...Array(2 ** conditionalActions.length).keys()]
-            .map(a => ([...Array(conditionalActions.length).keys()]
-                .map(b => !((a >> b) & 1)))
-            ).map(combination => Object.fromEntries(combination.map((condition, i) => (
-                [conditionalActions[i], condition]
-            ))));
+            .map(a => (
+                [...Array(conditionalActions.length).keys()]
+                    .map(b => !((a >> b) & 1))
+            )).map(combination => combination
+                .map((condition, i) => ([conditionalActions[i], condition]))
+                    .reduce(
+                        (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+                        {}
+                    )
+            );
 
         // Ensure that each input token is only spent once for each combination
         for (const conditionalCombination of conditionalCombinations) {
@@ -895,7 +902,7 @@ class Validator {
                         delete inputTokens[replacementInputToken];
                         inputTokens[inputTokenToReplace] = inputValuesToReplace;
                     }
-                } else if (!Validator.TYPE_CHECKERS.rawObject(action)) {
+                } else if (!TYPE_CHECKERS.rawObject(action)) {
                     inputTokens = Validator.validateInput(action, actionScript, {...inputTokens});
                 }
             }
@@ -909,7 +916,7 @@ class Validator {
 
         let inputTokens = {};
         for (let [i, inputObjects] of Object.entries(inputs)) {
-            if (!Validator.TYPE_CHECKERS.object(inputObjects)) {
+            if (!TYPE_CHECKERS.object(inputObjects)) {
                 throw new Error(
                     `Input #${parseInt(i) + 1} is not a key-value pair`
                 );
@@ -972,7 +979,7 @@ class Validator {
     static validateOutputs(actionScript) {
         const { name, variables, definitions, outputs, actions } = actionScript;
         for (let [i, outputObjects] of Object.entries(outputs)) {
-            if (!Validator.TYPE_CHECKERS.object(outputObjects)) {
+            if (!TYPE_CHECKERS.object(outputObjects)) {
                 throw new Error(
                     `Output #${parseInt(i) + 1} is not a key-value pair`
                 );
@@ -1021,7 +1028,7 @@ class Validator {
             actions,
         } = actionScript;
         for (let [i, associationObjects] of Object.entries(associations)) {
-            if (!Validator.TYPE_CHECKERS.object(associationObjects)) {
+            if (!TYPE_CHECKERS.object(associationObjects)) {
                 throw new Error(
                     `Association #${parseInt(i) + 1} is not a key-value pair`
                 );
@@ -1065,7 +1072,7 @@ class Validator {
 
     static ensureValidChecksum(address) {
         if (
-            !Validator.TYPE_CHECKERS.string(address) ||
+            !TYPE_CHECKERS.string(address) ||
             !address.match(/^0x[0-9A-Fa-f]*$/) ||
             address.length !== 42
         ) {

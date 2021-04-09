@@ -1,9 +1,8 @@
-const fs = require("fs");
-const path = require("path");
 const ethers = require("hardhat").ethers;
 const YAML = require("yaml");
 const inquirer = require("inquirer");
 const { Importer } = require("./importer");
+const { Exporter } = require("./exporter");
 const { Validator } = require("./validator");
 const { TestValidator } = require("./test-validator");
 const { evaluate } = require("./evaluate");
@@ -69,29 +68,6 @@ const generateSinglePassingTest = async ({
     });
 };
 
-const writeTestToFile = async (actionScriptName, testYAML, category) => {
-    const testDir = path.resolve(__dirname, "../action-script-tests");
-    try {
-        await fs.promises.mkdir(testDir);
-    } catch (e) {}
-
-    const categoryDir = path.resolve(testDir, category);
-    try {
-        await fs.promises.mkdir(categoryDir);
-    } catch (e) {}
-
-    fs.writeFileSync(
-        path.resolve(categoryDir, `${actionScriptName}.yaml`),
-        testYAML,
-        "utf8",
-        (err) => {
-            if (err) {
-                console.error(err);
-            }
-        }
-    );
-};
-
 const createSinglePassingTestAndWrite = async ({
     category,
     actionScriptName,
@@ -105,7 +81,7 @@ const createSinglePassingTestAndWrite = async ({
     });
     console.log(testYAML);
 
-    await writeTestToFile(actionScriptName, testYAML, category);
+    await Exporter.writeTestToFile(actionScriptName, testYAML, category);
     console.log(`Created test: action-script-tests/${category}/${actionScriptName}.yaml`);
 
     process.exit(0);
@@ -182,10 +158,12 @@ const getInputs = async () => {
         validator.actionScriptCategories[actionScriptIndex];
     const actionScript = validator.actionScripts[actionScriptIndex];
 
-    const remainingVariables = Object.fromEntries(
-        Object.entries(actionScript.variables)
-            .filter(([variableName, variableType]) => !(variableName in variables))
-    );
+    const remainingVariables = Object.entries(actionScript.variables)
+        .filter(([variableName, variableType]) => !(variableName in variables))
+        .reduce(
+            (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+            {}
+        );
 
     while (Object.keys(remainingVariables).length > 0) {
         const variablesAndLabels = Object.entries(

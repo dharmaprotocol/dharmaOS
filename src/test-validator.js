@@ -1,6 +1,59 @@
 const sha3 = require("js-sha3");
 const { Importer } = require("./importer");
 
+const TYPE_CHECKERS = {
+    string: (x) => x && (typeof x === "string" || x instanceof String),
+    array: (x) => x && Array.isArray(x) && typeof x === "object",
+    object: (x) => x && !Array.isArray(x) && typeof x === "object",
+    bool: (x) => x && typeof x === "boolean",
+    number: (x) => x && typeof x === "number",
+    address: (x) => x && TestValidator.ensureValidChecksum(x),
+};
+
+const VARIABLE_TYPE_CHECKERS = {
+    address: (x) => x && TestValidator.ensureValidChecksum(x),
+};
+
+const VALID_VARIABLE_TYPES = new Set([
+    "address",
+    "uint256",
+    "bool",
+    "bytes32",
+    "uint8",
+    "uint16",
+    "int128",
+]);
+
+// TODO: validate outputs as well?
+const ERC20_FUNCTIONS = {
+    transfer: ["address", "uint256"],
+    transferFrom: ["address", "address", "uint256"],
+    approve: ["address", "uint256"],
+    allowance: ["address"],
+    balanceOf: ["address"],
+    totalSupply: [],
+};
+
+const TOP_LEVEL_FIELDS_AND_TYPES = {
+    name: "string",
+    blockNumber: "number",
+    tests: "array",
+};
+
+const TEST_LEVEL_FIELDS_AND_TYPES = {
+    name: "string",
+    success: "bool",
+    variables: "object",
+    results: "object",
+    events: "array",
+};
+
+const EVENT_LEVEL_FIELDS_AND_TYPES = {
+    address: "address",
+    name: "string",
+    args: "object",
+};
+
 class TestValidator {
     static call() {
         const testValidator = new TestValidator();
@@ -10,68 +63,6 @@ class TestValidator {
         testValidator.generateScenarios();
         return testValidator.scenarios;
     }
-
-    static TYPE_CHECKERS = {
-        string: (x) => x && (typeof x === "string" || x instanceof String),
-        array: (x) => x && Array.isArray(x) && typeof x === "object",
-        object: (x) => x && !Array.isArray(x) && typeof x === "object",
-        bool: (x) => x && typeof x === "boolean",
-        number: (x) => x && typeof x === "number",
-        address: (x) => x && TestValidator.ensureValidChecksum(x),
-    };
-
-    static VARIABLE_TYPE_CHECKERS = {
-        address: (x) => x && TestValidator.ensureValidChecksum(x),
-    };
-
-    static VALID_VARIABLE_TYPES = new Set([
-        "address",
-        "uint256",
-        "bool",
-        "bytes32",
-        "uint8",
-        "uint16",
-        "int128",
-    ]);
-
-    // TODO: validate outputs as well?
-    static ERC20_FUNCTIONS = {
-        transfer: ["address", "uint256"],
-        transferFrom: ["address", "address", "uint256"],
-        approve: ["address", "uint256"],
-        allowance: ["address"],
-        balanceOf: ["address"],
-        totalSupply: [],
-    };
-
-    static TOP_LEVEL_FIELDS_AND_TYPES = {
-        name: "string",
-        blockNumber: "number",
-        tests: "array",
-    };
-
-    static TEST_LEVEL_FIELDS_AND_TYPES = {
-        name: "string",
-        success: "bool",
-        variables: "object",
-        results: "object",
-        events: "array",
-    };
-
-    static EVENT_LEVEL_FIELDS_AND_TYPES = {
-        address: "address",
-        name: "string",
-        args: "object",
-    };
-
-    static TEST_LEVEL_DEFAULTS = {
-        success: true,
-        variables: {},
-        results: {},
-        events: [],
-    };
-
-    static RESERVED_KEYWORDS = new Set(["wallet", "ETHER"]);
 
     validateActionScriptTests() {
         const names = this.actionScriptTests.map((script) => script.name);
@@ -99,14 +90,14 @@ class TestValidator {
 
     validateActionScriptTest(actionScriptTest) {
         for (let [field, type] of Object.entries(
-            TestValidator.TOP_LEVEL_FIELDS_AND_TYPES
+            TOP_LEVEL_FIELDS_AND_TYPES
         )) {
             if (!(field in actionScriptTest)) {
                 throw new Error(
                     `Action script test "${actionScriptTest.name}" must contain a "${field}" field`
                 );
             }
-            if (!TestValidator.TYPE_CHECKERS[type](actionScriptTest[field])) {
+            if (!TYPE_CHECKERS[type](actionScriptTest[field])) {
                 throw new Error(
                     `Action script test "${actionScriptTest.name}" field "${field}" must be of type "${type}"`
                 );
@@ -136,14 +127,14 @@ class TestValidator {
             const testName = test.name;
 
             for (let [field, type] of Object.entries(
-                TestValidator.TEST_LEVEL_FIELDS_AND_TYPES
+                TEST_LEVEL_FIELDS_AND_TYPES
             )) {
                 if (!(field in test)) {
                     throw new Error(
                         `Action script test "${testName}" on "${name}" must contain a "${field}" field`
                     );
                 }
-                if (!TestValidator.TYPE_CHECKERS[type](test[field])) {
+                if (!TYPE_CHECKERS[type](test[field])) {
                     throw new Error(
                         `Action script test "${testName}" on "${name}" has a field "${field}" that is not of type "${type}"`
                     );
@@ -160,9 +151,9 @@ class TestValidator {
                 }
 
                 // TODO: expand to other variable types
-                if (variableType in TestValidator.VARIABLE_TYPE_CHECKERS) {
+                if (variableType in VARIABLE_TYPE_CHECKERS) {
                     if (
-                        !TestValidator.VARIABLE_TYPE_CHECKERS[variableType](
+                        !VARIABLE_TYPE_CHECKERS[variableType](
                             test.variables[variableName]
                         )
                     ) {
@@ -183,9 +174,9 @@ class TestValidator {
                 }
 
                 // TODO: expand to other variable types
-                if (resultType in TestValidator.VARIABLE_TYPE_CHECKERS) {
+                if (resultType in VARIABLE_TYPE_CHECKERS) {
                     if (
-                        !TestValidator.VARIABLE_TYPE_CHECKERS[resultType](
+                        !VARIABLE_TYPE_CHECKERS[resultType](
                             test.results[resultName]
                         )
                     ) {
@@ -198,7 +189,7 @@ class TestValidator {
 
             for (const [eventIndex, event] of Object.entries(test.events)) {
                 for (let [field, type] of Object.entries(
-                    TestValidator.EVENT_LEVEL_FIELDS_AND_TYPES
+                    EVENT_LEVEL_FIELDS_AND_TYPES
                 )) {
                     if (!(field in event)) {
                         throw new Error(
@@ -207,7 +198,7 @@ class TestValidator {
                             } must contain a "${field}" field`
                         );
                     }
-                    if (!TestValidator.TYPE_CHECKERS[type](event[field])) {
+                    if (!TYPE_CHECKERS[type](event[field])) {
                         throw new Error(
                             `Action script test "${testName}" on "${name}" event #${
                                 parseInt(eventIndex) + 1
@@ -255,7 +246,7 @@ class TestValidator {
 
     static ensureValidChecksum(address) {
         if (
-            !TestValidator.TYPE_CHECKERS.string(address) ||
+            !TYPE_CHECKERS.string(address) ||
             !address.match(/^0x[0-9A-Fa-f]*$/) ||
             address.length !== 42
         ) {

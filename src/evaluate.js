@@ -386,8 +386,21 @@ function parseLogIncludingAnonymous(log, abi) {
                     event = {
                         name,
                         args: {
-                            ...Object.fromEntries(Array(inputsWithValues.length).fill().map((_, i) => [i, inputsWithValues[i][1]])),
-                            ...Object.fromEntries(inputsWithValues),
+                            ...Array(inputsWithValues.length)
+                                .fill()
+                                .map((_, i) => [i, inputsWithValues[i][1]])
+                                .reduce(
+                                    (result, [key, value]) => Object.assign(
+                                        {}, result, {[key]: value}
+                                    ),
+                                    {}
+                                ),
+                            ...inputsWithValues.reduce(
+                                (result, [key, value]) => Object.assign(
+                                    {}, result, {[key]: value}
+                                ),
+                                {}
+                            ),
                         }
                     }
 
@@ -444,12 +457,14 @@ async function evaluate(actionScriptName, variables, blockNumber) {
     const actionScript = await Importer.getActionScript(actionScriptName);
     const { definitions, inputs } = actionScript;
 
-    const tokenDefinitions = Object.fromEntries(
-        definitions
-            .map((d) => d.split(" "))
-            .filter((d) => d[0] === "Token")
-            .map((d) => [d[1], d[2] in variables ? variables[d[2]] : d[2]])
-    );
+    const tokenDefinitions = definitions
+        .map((d) => d.split(" "))
+        .filter((d) => d[0] === "Token")
+        .map((d) => [d[1], d[2] in variables ? variables[d[2]] : d[2]])
+        .reduce(
+            (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+            {}
+        );
 
     const inputTokens = {};
     for (let inputObjects of inputs) {
@@ -756,16 +771,17 @@ async function evaluate(actionScriptName, variables, blockNumber) {
             }
 
             const allArgs = Object.entries({ ...currentEvent.args });
-            const namedArgs = Object.fromEntries(
-                allArgs
-                    .slice(allArgs.length / 2)
-                    .map(([key, value]) => [
-                        key,
-                        ethers.BigNumber.isBigNumber(value)
-                            ? value.toString()
-                            : value,
-                    ])
-            );
+            const namedArgs = allArgs
+                .slice(allArgs.length / 2)
+                .map(([key, value]) => [
+                    key,
+                    ethers.BigNumber.isBigNumber(value)
+                        ? value.toString()
+                        : value,
+                ]).reduce(
+                    (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+                    {}
+                );
 
             const event = {
                 address: log.address,

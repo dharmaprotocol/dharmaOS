@@ -150,13 +150,14 @@ class ResultsParser {
 
         return [
             decoded,
-            Object.fromEntries(
-                Object.entries(functionABI).map(([i, x]) => [
-                    x.name ? x.name : x.type,
-                    ethers.BigNumber.isBigNumber(decoded[i])
-                        ? decoded[i].toString()
-                        : decoded[i],
-                ])
+            Object.entries(functionABI).map(([i, x]) => [
+                x.name ? x.name : x.type,
+                ethers.BigNumber.isBigNumber(decoded[i])
+                    ? decoded[i].toString()
+                    : decoded[i],
+            ]).reduce(
+                (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+                {}
             ),
         ];
     }
@@ -171,13 +172,14 @@ class ResultsParser {
 
         return [
             decoded,
-            Object.fromEntries(
-                Object.entries(functionABI).map(([i, x]) => [
-                    x.name ? x.name : x.type,
-                    ethers.BigNumber.isBigNumber(decoded[i])
-                        ? decoded[i].toString()
-                        : decoded[i],
-                ])
+            Object.entries(functionABI).map(([i, x]) => [
+                x.name ? x.name : x.type,
+                ethers.BigNumber.isBigNumber(decoded[i])
+                    ? decoded[i].toString()
+                    : decoded[i],
+            ]).reduce(
+                (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+                {}
             ),
         ];
     }
