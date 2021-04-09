@@ -1,0 +1,32 @@
+name: Test & Publish
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+   
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js v15
+      uses: actions/setup-node@v1
+      with:
+        node-version: 15
+    - name: Install
+      run: yarn install --frozen-lockfile
+    - name: Build and validate
+      run: yarn build
+      env:
+        WEB3_PROVIDER_URL: ${{ secrets.WEB3_PROVIDER_URL }}
+        ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+    - name: Run tests
+      run: yarn test
+      env:
+        WEB3_PROVIDER_URL: ${{ secrets.WEB3_PROVIDER_URL }}
+        ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+    - name: Publish to NPM registry
+      run: yarn publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
