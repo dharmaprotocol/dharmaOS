@@ -265,7 +265,7 @@ const ERC20_CALL_RESULTS = [
 );
 
 class Encoder {
-    static async encode({actionScript, variables, wallet}) {
+    static encode({actionScript, variables, wallet}) {
         const encoder = new Encoder(actionScript, variables, wallet);
 
         return encoder.encode();
@@ -278,9 +278,9 @@ class Encoder {
         this.isAdvanced = Validator.isAdvanced(actionScript);
     }
 
-    async encode() {
-        await this.parseActionScriptDefinitions();
-        await this.constructCallsAndResultsFormat();
+    encode() {
+        this.parseActionScriptDefinitions();
+        this.constructCallsAndResultsFormat();
 
         return {
             calls: this.calls,
@@ -591,7 +591,7 @@ class Encoder {
         }
     }
 
-    async constructCallsAndResultsFormat() {
+    constructCallsAndResultsFormat() {
         this.calls = [];
         this.callABIs = [];
         this.resultToParse = {};
@@ -690,7 +690,7 @@ class Encoder {
         }
     }
 
-    async parseActionScriptDefinitions() {
+    parseActionScriptDefinitions() {
         const definitions = this.actionScript.definitions || [];
 
         this.targetContracts = {};

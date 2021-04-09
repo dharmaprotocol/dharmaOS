@@ -688,7 +688,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
         callABIs,
         resultToParse,
         isAdvanced
-    } = await Encoder.encode(encoderArgs);
+    } = Encoder.encode(encoderArgs);
 
     const simulateTarget = !isAdvanced ? 'simulate' : 'simulateAdvanced';
     const callResults = await wallet.callStatic[simulateTarget](calls);
