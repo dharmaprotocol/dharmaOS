@@ -264,7 +264,7 @@ const getFilePaths = (dir) => {
         const res = path.resolve(dir, dirent.name);
         return dirent.isDirectory() ? this.getFilePaths(res) : res;
     });
-    return files.flat();
+    return [].concat(...files);
 };
 
 const getABI = async (account) => {
@@ -709,7 +709,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
         results,
         revertReason,
         parsedReturnData
-    } = await ResultsParser.parse(parserArgs);
+    } = ResultsParser.parse(parserArgs);
 
     let events = {};
     if (!!success) {

@@ -2,7 +2,7 @@ const ethers = require("ethers");
 const { Validator } = require("./validator");
 
 class ResultsParser {
-    static async parse({
+    static parse({
         actionScript,
         calls,
         callResults,
@@ -52,7 +52,7 @@ class ResultsParser {
         );
     }
 
-    async parse() {
+    parse() {
         let success;
         let rawResults;
         if (!this.isAdvanced) {
@@ -69,8 +69,8 @@ class ResultsParser {
             rawResults = this.calls.map((x, i) => [x, ok[i], returnData[i]]);
         }
 
-        const results = await Promise.all(
-            rawResults.map(async (x, i) => this.parseCall(x, this.callABIs[i]))
+        const results = rawResults.map(
+            (x, i) => this.parseCall(x, this.callABIs[i])
         );
 
         let parsedResults = {};
@@ -234,7 +234,7 @@ class ResultsParser {
         }
     }
 
-    async parseCall(rawResult, callABI = null) {
+    parseCall(rawResult, callABI = null) {
         const [call, ok, returnData] = rawResult;
 
         const hasData = !!call.data && call.data !== "0x";
