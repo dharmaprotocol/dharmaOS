@@ -27,6 +27,6 @@ jobs:
         WEB3_PROVIDER_URL: ${{ secrets.WEB3_PROVIDER_URL }}
         ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
     - name: Publish to NPM registry
-      run: yarn publish
+      run: yarn publish --access public
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
