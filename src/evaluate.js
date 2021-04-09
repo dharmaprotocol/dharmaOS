@@ -709,7 +709,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
         results,
         revertReason,
         parsedReturnData
-    } = await ResultsParser.parse(parserArgs);
+    } = ResultsParser.parse(parserArgs);
 
     let events = {};
     if (!!success) {
