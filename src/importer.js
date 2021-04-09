@@ -63,7 +63,7 @@ class Importer {
             const res = path.resolve(dir, dirent.name);
             return dirent.isDirectory() ? this.getFilePaths(res) : res;
         });
-        return files.flat();
+        return [].concat(...files);
     }
 
     static checkCategory(filepath, rootCategory) {
