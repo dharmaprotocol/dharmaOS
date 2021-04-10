@@ -410,7 +410,7 @@ class Validator {
             ) {
                 throw new Error(
                     `Action script "${name}" action #${
-                        parseInt(i) + 1
+                        parseInt(index) + 1
                     } (ETHER) requires a to:amount argument`
                 );
             }
@@ -462,7 +462,7 @@ class Validator {
         if (!definedFunctions.has(actionFunction)) {
             throw new Error(
                 `Action script "${name}" action #${
-                    parseInt(i) + 1
+                    parseInt(index) + 1
                 } refers to undeclared Function "${actionFunction}"`
             );
         }
@@ -514,7 +514,7 @@ class Validator {
             if (functionDefinition[2] !== actionContract) {
                 throw new Error(
                     `Action script "${name}" action #${
-                        parseInt(i) + 1
+                        parseInt(index) + 1
                     } calls Function "${actionFunction}" on Contract or Token "${actionContract}" when it is actually defined for ${
                         functionDefinition[2]
                     }`
@@ -525,7 +525,7 @@ class Validator {
         if (givenArguments.length !== expectedArgumentTypes.length) {
             throw new Error(
                 `Function "${actionFunction}" (action #${
-                    parseInt(i) + 1
+                    parseInt(index) + 1
                 }) gives ${givenArguments.length} arguments and expects ${
                     expectedArgumentTypes.length
                 }`

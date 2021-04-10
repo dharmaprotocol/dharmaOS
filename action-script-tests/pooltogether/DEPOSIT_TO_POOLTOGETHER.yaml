@@ -1,0 +1,87 @@
+name: DEPOSIT_TO_POOLTOGETHER
+blockNumber: 12209619
+tests:
+  - name: Deposit to PoolTogether pools using supported tokens
+    success: true
+    variables:
+      suppliedTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      suppliedAmount: "1000000000000000000"
+      poolTokenAddress: "0x334cBb5858417Aee161B53Ee0D5349cCF54514CF"
+      poolAddress: "0xEBfb47A7ad0FD6e57323C8A42B2E5A6a4F68fc1a"
+    results:
+      poolTokenReceivedAmount: "1000000000000000000"
+    events:
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0xEBfb47A7ad0FD6e57323C8A42B2E5A6a4F68fc1a"
+          value: "1000000000000000000"
+      - address: "0xF362ce295F2A4eaE4348fFC8cDBCe8d729ccb8Eb"
+        name: Dripped
+        args:
+          newTokens: "55883290816326530040"
+      - address: "0xEBfb47A7ad0FD6e57323C8A42B2E5A6a4F68fc1a"
+        name: CreditBurned
+        args:
+          user: wallet
+          token: "0x334cBb5858417Aee161B53Ee0D5349cCF54514CF"
+          amount: "0"
+      - address: "0x334cBb5858417Aee161B53Ee0D5349cCF54514CF"
+        name: Transfer
+        args:
+          from: "0x0000000000000000000000000000000000000000"
+          to: wallet
+          value: "1000000000000000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0xEBfb47A7ad0FD6e57323C8A42B2E5A6a4F68fc1a"
+          value: "1000000000000000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Approval
+        args:
+          owner: "0xEBfb47A7ad0FD6e57323C8A42B2E5A6a4F68fc1a"
+          spender: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+          value: "1000000000000000000"
+      - address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+        name: AccrueInterest
+        args:
+          cashPrior: "532076153704881714302697481"
+          interestAccumulated: "1399387274183771357229"
+          borrowIndex: "1085792918955605126"
+          totalBorrows: "2910197975771476664592907738"
+      - address: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B"
+        name: DistributedSupplierComp
+        args:
+          cToken: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+          supplier: "0xEBfb47A7ad0FD6e57323C8A42B2E5A6a4F68fc1a"
+          compDelta: "13464578440679421"
+          compSupplyIndex: "45059243201428175577960772728830471165328"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0xEBfb47A7ad0FD6e57323C8A42B2E5A6a4F68fc1a"
+          to: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+          value: "1000000000000000000"
+      - address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+        name: Mint
+        args:
+          minter: "0xEBfb47A7ad0FD6e57323C8A42B2E5A6a4F68fc1a"
+          mintAmount: "1000000000000000000"
+          mintTokens: "4689228129"
+      - address: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+        name: Transfer
+        args:
+          from: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
+          to: "0xEBfb47A7ad0FD6e57323C8A42B2E5A6a4F68fc1a"
+          value: "4689228129"
+      - address: "0xEBfb47A7ad0FD6e57323C8A42B2E5A6a4F68fc1a"
+        name: Deposited
+        args:
+          operator: wallet
+          to: wallet
+          token: "0x334cBb5858417Aee161B53Ee0D5349cCF54514CF"
+          amount: "1000000000000000000"
+          referrer: "0x0eFb068354c10c070ddD64a0E8EaF8f054DF7E26"
