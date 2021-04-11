@@ -113,6 +113,13 @@ const runTests = async (thread) => {
         );
         console.log()
         for (t of [...Array(THREADS).keys()]) {
+            if (
+                typeof process.env.CI_THREAD !== 'undefined' &&
+                process.env.CI_THREAD !== thread
+            ) {
+                continue;
+            }
+
             console.log(
                 `Thread ${t + 1}, ${threadedSplitScenarios[t].length} scenarios:`
             );
