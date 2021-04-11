@@ -1,0 +1,88 @@
+name: WITHDRAW_FROM_POOLTOGETHER
+blockNumber: 12215763
+tests:
+  - name: Redeem poolTokens from PoolTogether and receive underlying tokens
+    success: true
+    variables:
+      poolAddress: "0xde9ec95d7708B8319CCca4b8BC92c0a3B70bf416"
+      receivedTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+      poolTokenAmount: "1000000"
+      poolTokenAddress: "0xD81b1A8B1AD00Baa2D6609E0BAE28A38713872f7"
+    results:
+      receivedAmount: "990000"
+      exitFee: "10000"
+    events:
+      - address: "0xde9ec95d7708B8319CCca4b8BC92c0a3B70bf416"
+        name: CreditBurned
+        args:
+          user: wallet
+          token: "0xD81b1A8B1AD00Baa2D6609E0BAE28A38713872f7"
+          amount: "0"
+      - address: "0xde9ec95d7708B8319CCca4b8BC92c0a3B70bf416"
+        name: CreditBurned
+        args:
+          user: wallet
+          token: "0xD81b1A8B1AD00Baa2D6609E0BAE28A38713872f7"
+          amount: "0"
+      - address: "0xde9ec95d7708B8319CCca4b8BC92c0a3B70bf416"
+        name: CreditBurned
+        args:
+          user: wallet
+          token: "0xD81b1A8B1AD00Baa2D6609E0BAE28A38713872f7"
+          amount: "0"
+      - address: "0xBD537257fAd96e977b9E545bE583bbF7028F30b9"
+        name: Dripped
+        args:
+          newTokens: "26573129251700680000"
+      - address: "0xD81b1A8B1AD00Baa2D6609E0BAE28A38713872f7"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0x0000000000000000000000000000000000000000"
+          value: "1000000"
+      - address: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+        name: AccrueInterest
+        args:
+          interestAccumulated: "3384161929"
+          borrowIndex: "1179436361013040464"
+          totalBorrows: "2749421809205752"
+      - address: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B"
+        name: DistributedSupplierComp
+        args:
+          cToken: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+          supplier: "0xde9ec95d7708B8319CCca4b8BC92c0a3B70bf416"
+          compDelta: "308182951806876794"
+          compSupplyIndex: "29325062109711913204403124460211836402892"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+          to: "0xde9ec95d7708B8319CCca4b8BC92c0a3B70bf416"
+          value: "990000"
+      - address: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+        name: Transfer
+        args:
+          from: "0xde9ec95d7708B8319CCca4b8BC92c0a3B70bf416"
+          to: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+          value: "4524428948"
+      - address: "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+        name: Redeem
+        args:
+          redeemer: "0xde9ec95d7708B8319CCca4b8BC92c0a3B70bf416"
+          redeemAmount: "990000"
+          redeemTokens: "4524428948"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0xde9ec95d7708B8319CCca4b8BC92c0a3B70bf416"
+          to: wallet
+          value: "990000"
+      - address: "0xde9ec95d7708B8319CCca4b8BC92c0a3B70bf416"
+        name: InstantWithdrawal
+        args:
+          operator: wallet
+          from: wallet
+          token: "0xD81b1A8B1AD00Baa2D6609E0BAE28A38713872f7"
+          amount: "1000000"
+          redeemed: "990000"
+          exitFee: "10000"
