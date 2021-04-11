@@ -1,0 +1,1 @@
+require("../src/test-template")(11);
