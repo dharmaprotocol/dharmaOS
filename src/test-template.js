@@ -107,19 +107,20 @@ const runTests = async (thread) => {
     );
     const splitScenarios = threadedSplitScenarios[thread];
 
-    if (thread === 0) {
+    if (typeof process.env.CI_THREAD !== 'undefined') {
+        console.log(
+            `Thread ${thread + 1}: running ${splitScenarios.length} / ${scenarios.length} scenarios:`
+        );
+        for (const {actionScriptName, testName} of splitScenarios) {
+            console.log(` * ${actionScriptName} => ${testName}`);
+        }
+        console.log();
+    } else if (thread === 0) {
         console.log(
             `Running ${scenarios.length} action script scenario tests across ${THREADS} threads.`
         );
-        console.log()
+        console.log();
         for (t of [...Array(THREADS).keys()]) {
-            if (
-                typeof process.env.CI_THREAD !== 'undefined' &&
-                process.env.CI_THREAD !== thread
-            ) {
-                continue;
-            }
-
             console.log(
                 `Thread ${t + 1}, ${threadedSplitScenarios[t].length} scenarios:`
             );
@@ -127,9 +128,9 @@ const runTests = async (thread) => {
             for (const {actionScriptName, testName} of threadedSplitScenarios[t]) {
                 console.log(` * ${actionScriptName} => ${testName}`);
             }
-            console.log()
+            console.log();
         }
-        console.log()
+        console.log();
     }
 
     await Promise.all(splitScenarios.map(testScenario));
