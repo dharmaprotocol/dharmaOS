@@ -21,7 +21,7 @@ const testScenario = async (scenario) => {
     } = scenario;
 
     describe(`${actionScriptName}: ${testName}`, async function () {
-        this.timeout(10000);
+        this.timeout(100000);
         before(async function () {
             const data = await evaluate(
                 actionScriptName,
