@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { evaluate } = require("./evaluate");
 const { TestValidator } = require("./test-validator");
 
-const THREADS = 12;
+const THREADS = 4;
 
 const testScenario = async (scenario) => {
     let evaluatedSuccess;
@@ -97,8 +97,6 @@ const testScenario = async (scenario) => {
         }
     });
 };
-
-const sleep = (ms) => (new Promise(resolve => setTimeout(resolve, ms)));
 
 const runTests = async (thread) => {
     const scenarios = TestValidator.call();
