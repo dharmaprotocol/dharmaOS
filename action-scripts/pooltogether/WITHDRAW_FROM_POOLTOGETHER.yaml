@@ -1,0 +1,33 @@
+name: "WITHDRAW_FROM_POOLTOGETHER"
+
+summary: "Redeem poolTokens from PoolTogether and receive underlying tokens"
+
+variables:
+  receivedTokenAddress: address
+  poolTokenAddress: address
+  poolAddress: address
+  poolTokenAmount: uint256
+
+results:
+  receivedAmount: uint256
+  exitFee: uint256
+
+definitions:
+ - Token UNDERLYING receivedTokenAddress
+ - Token POOL_TOKEN poolTokenAddress
+ - Contract POOL poolAddress
+ - Function withdraw POOL withdrawInstantlyFrom(address,uint256,address,uint256) => uint256
+
+inputs:
+ - POOL_TOKEN: poolTokenAmount
+
+actions:
+ - POOL withdraw wallet poolTokenAmount POOL_TOKEN 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => exitFee # Note: uses maximum value for exit fee for now, could pass in as a variable
+
+operations:
+ - poolTokenAmount - exitFee => receivedAmount
+
+outputs:
+ - UNDERLYING: receivedAmount
+
+description: "Withdraw ${receivedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol} from PoolTogether using ${poolTokenAmount:POOL_TOKEN.decimals} ${POOL_TOKEN.symbol}"

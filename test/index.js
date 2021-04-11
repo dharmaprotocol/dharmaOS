@@ -80,9 +80,15 @@ const testScenario = async (scenario) => {
                             expectedArgValue
                         );
                     } else {
-                        expect(evaluatedArgs[expectedArgName]).to.equal(
-                            expectedArgValue
-                        );
+                        // Note: values that are dependent on timestamps can
+                        // cause issues — look into methods for locking in a
+                        // specific timestamp immediately prior to executing
+                        // the call being tested
+                        if (expectedArgValue !== 'SKIP') {
+                            expect(evaluatedArgs[expectedArgName]).to.equal(
+                                expectedArgValue
+                            );
+                        }
                     }
                 });
             }

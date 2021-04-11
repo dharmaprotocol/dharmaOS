@@ -1,0 +1,34 @@
+name: "DEPOSIT_TO_POOLTOGETHER"
+
+summary: "Deposit to PoolTogether pools using supported tokens"
+
+variables:
+  suppliedTokenAddress: address
+  suppliedAmount: uint256
+  poolTokenAddress: address
+  poolAddress: address
+
+results:
+  poolTokenReceivedAmount: uint256
+
+definitions:
+ - Token UNDERLYING suppliedTokenAddress
+ - Token POOL_TOKEN poolTokenAddress
+ - Contract POOL poolAddress
+ - Function deposit POOL depositTo(address,uint256,address,address)
+ - Contract TRADE_RESERVE 0x0eFb068354c10c070ddD64a0E8EaF8f054DF7E26
+
+inputs:
+ - UNDERLYING: suppliedAmount
+
+actions:
+ - UNDERLYING approve POOL suppliedAmount
+ - POOL deposit wallet suppliedAmount POOL_TOKEN TRADE_RESERVE
+
+operations:
+ - suppliedAmount * 1 => poolTokenReceivedAmount
+
+outputs:
+ - POOL_TOKEN: poolTokenReceivedAmount
+
+description: "Mint ${poolTokenReceivedAmount:POOL_TOKEN.decimals} ${POOL_TOKEN.symbol} via PoolTogether using ${suppliedAmount:UNDERLYING.decimals} ${UNDERLYING.symbol}"

@@ -1,10 +1,10 @@
 const ethers = require("hardhat").ethers;
 const YAML = require("yaml");
+const path = require("path");
 const inquirer = require("inquirer");
 const { Importer } = require("./importer");
 const { Exporter } = require("./exporter");
 const { Validator } = require("./validator");
-const { TestValidator } = require("./test-validator");
 const { evaluate } = require("./evaluate");
 
 const generateSinglePassingTest = async ({
@@ -88,16 +88,17 @@ const createSinglePassingTestAndWrite = async ({
 };
 
 const getInputs = async () => {
-    const validator = new Validator();
-    await validator.parseActionScripts();
-    const actionScriptNames = validator.actionScripts.map(
+    const importer = new Importer();
+    const actionScripts = importer.parseActionScripts();
+    const actionScriptNames = actionScripts.map(
         (script) => script.name
     );
+    const actionScriptCategories = importer.relevantFilepaths['action-scripts']
+        .map((x) => path.basename(path.dirname(x[1])));
 
-    const testValidator = new TestValidator();
-    testValidator.parseActionScriptTests();
+    const actionScriptTests = importer.parseActionScriptTests();
     const actionScriptTestNames = new Set(
-        testValidator.actionScriptTests.map((test) => test.name)
+        actionScriptTests.map((test) => test.name)
     );
 
     let testGenerationConfig;
@@ -155,8 +156,8 @@ const getInputs = async () => {
 
     const actionScriptIndex = actionScriptNames.indexOf(actionScriptName);
     const actionScriptCategory =
-        validator.actionScriptCategories[actionScriptIndex];
-    const actionScript = validator.actionScripts[actionScriptIndex];
+        actionScriptCategories[actionScriptIndex];
+    const actionScript = actionScripts[actionScriptIndex];
 
     const remainingVariables = Object.entries(actionScript.variables)
         .filter(([variableName, variableType]) => !(variableName in variables))

@@ -40,6 +40,29 @@ class Exporter {
             );
         }
     }
+
+    static async writeTestToFile(actionScriptName, testYAML, category) {
+        const testDir = path.resolve(__dirname, "../action-script-tests");
+        try {
+            await fs.promises.mkdir(testDir);
+        } catch (e) {}
+
+        const categoryDir = path.resolve(testDir, category);
+        try {
+            await fs.promises.mkdir(categoryDir);
+        } catch (e) {}
+
+        fs.writeFileSync(
+            path.resolve(categoryDir, `${actionScriptName}.yaml`),
+            testYAML,
+            "utf8",
+            (err) => {
+                if (err) {
+                    console.error(err);
+                }
+            }
+        );
+    };
 }
 
 module.exports = {
