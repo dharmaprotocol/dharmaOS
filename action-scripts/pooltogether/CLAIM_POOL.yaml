@@ -1,0 +1,28 @@
+name: "CLAIM_POOL"
+
+summary: "Claim accrued POOL from a given PoolTogether prize pool"
+
+variables:
+  poolFaucetAddress: address
+
+results:
+  claimedPOOL: uint256
+
+definitions:
+ - Token POOL 0x0cEC1A9154Ff802e7934Fc916Ed7Ca50bDE6844e
+ - Contract POOL_FAUCET poolFaucetAddress
+ - Function claimPool POOL_FAUCET claim(address) => uint256
+
+inputs:
+
+actions:
+ - POOL_FAUCET claimPool wallet => claimedPOOL
+
+operations:
+
+outputs:
+ - POOL: claimedPOOL
+
+associations:
+
+description: "Claim ${claimedPOOL:POOL.decimals} POOL tokens"
