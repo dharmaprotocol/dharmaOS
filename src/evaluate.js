@@ -267,7 +267,7 @@ const getFilePaths = (dir) => {
     return [].concat(...files);
 };
 
-const getABI = async (account) => {
+const getABI = async (account, proxyFor) => {
     // first see if a file with account name is in `contractABIs` directory
     const contractABIDir = path.resolve(__dirname, "../contractABIs");
     try {
@@ -307,6 +307,19 @@ const getABI = async (account) => {
         fs.writeFileSync(contractABIPath, abi, "utf8", (err) => {
             if (err) {
                 throw new Error(`Could not write ABI to file: ${err.message}`);
+            }
+        });
+    }
+
+    if (!!abi && !!proxyFor) {
+        const proxiedABIPath = `${path.resolve(
+            contractABIDir,
+            proxyFor.toLowerCase()
+        )}.json`;
+
+        fs.writeFileSync(proxiedABIPath, abi, "utf8", (err) => {
+            if (err) {
+                throw new Error(`Could not write implementation ABI to file of proxy: ${err.message}`);
             }
         });
     }
@@ -754,7 +767,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                                     .slice(18, -7);
 
                                 const proxy = ethers.utils.getAddress(proxyAddress);
-                                const proxyABI = await getABI(proxy);
+                                const proxyABI = await getABI(proxy, log.address);
                                 currentEvent = await parseLogIncludingAnonymous(log, proxyABI);
                             } else {
                                 console.error(
