@@ -1,6 +1,8 @@
 const { expect } = require("chai");
-const { evaluate } = require("../src/evaluate");
-const { TestValidator } = require("../src/test-validator");
+const { evaluate } = require("./evaluate");
+const { TestValidator } = require("./test-validator");
+
+const THREADS = 4;
 
 const testScenario = async (scenario) => {
     let evaluatedSuccess;
@@ -18,20 +20,20 @@ const testScenario = async (scenario) => {
         events: expectedEvents = [],
     } = scenario;
 
-    describe(`${actionScriptName}: ${testName}`, function () {
-        console.log(` > ${actionScriptName}: ${testName}`);
+    describe(`${actionScriptName}: ${testName}`, async function () {
+        this.timeout(100000);
         before(async function () {
             const data = await evaluate(
                 actionScriptName,
                 variables,
                 blockNumber
             );
-            console.log(` ---> ${actionScriptName}: ${!!data.success ? 'ready' : 'FAILED'}`)
 
             evaluatedSuccess = data.success;
             evaluatedResults = data.results;
             evaluatedEvents = data.events;
             wallet = data.wallet;
+            // console.log(` ---> ${actionScriptName}: ${!!data.success ? 'ready' : 'FAILED'}`)
         });
 
         it(`expect success to be ${expectedSuccess}`, async function () {
@@ -96,10 +98,42 @@ const testScenario = async (scenario) => {
     });
 };
 
-describe("Action Scripts", async () => {
+const runTests = async (thread) => {
     const scenarios = TestValidator.call();
-    console.log(
-        `Running tests for ${scenarios.length} action script scenarios...`
+    const threadedSplitScenarios = [...Array(THREADS).keys()].map(
+        t => Object.entries(scenarios)
+            .filter(([index, ]) => (index % THREADS === t))
+            .map(entries => entries[1])
     );
-    await Promise.all(scenarios.map(testScenario));
-});
+    const splitScenarios = threadedSplitScenarios[thread];
+
+    if (typeof process.env.CI_THREAD !== 'undefined') {
+        console.log(
+            `Thread ${thread + 1}: running ${splitScenarios.length} / ${scenarios.length} scenarios:`
+        );
+        for (const {actionScriptName, testName} of splitScenarios) {
+            console.log(` * ${actionScriptName} => ${testName}`);
+        }
+        console.log();
+    } else if (thread === 0) {
+        console.log(
+            `Running ${scenarios.length} action script scenario tests across ${THREADS} threads.`
+        );
+        console.log();
+        for (t of [...Array(THREADS).keys()]) {
+            console.log(
+                `Thread ${t + 1}, ${threadedSplitScenarios[t].length} scenarios:`
+            );
+
+            for (const {actionScriptName, testName} of threadedSplitScenarios[t]) {
+                console.log(` * ${actionScriptName} => ${testName}`);
+            }
+            console.log();
+        }
+        console.log();
+    }
+
+    await Promise.all(splitScenarios.map(testScenario));
+};
+
+module.exports = runTests;
