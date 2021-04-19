@@ -868,27 +868,33 @@ class Validator {
             inputTokens = {...startingInputTokens};
             for (let [i, action] of Object.entries(actions)) {
                 if (i in conditionalCombination) {
-                    if (!action.if.condition.includes(" is ")) {
-                        throw new Error(
-                            `Action script "${name}" has a condition that does not contain a direct comparison (for now only "<TOKEN_X> is <TOKEN_Y || ETHER>" is supported)`
-                        );
-                    }
-
                     const splitCondition = action.if.condition.split(" ");
                     if (splitCondition.length !== 3) {
                         throw new Error(
-                            `Action script "${name}" has a condition that does not contain exactly three arguments (for now only "<TOKEN_X> is <TOKEN_Y || ETHER>" is supported)`
+                            `Action script "${name}" has a condition that does not contain exactly three arguments (for now only "<TOKEN_X> is <TOKEN_Y || ETHER>" and "<variable> is <true || false>" are supported)`
                         );
                     }
 
-                    const inputTokenToReplace = splitCondition[0];
-                    const replacementInputToken = splitCondition[2];
+                    if (splitCondition[1] !== "is") {
+                        throw new Error(
+                            `Action script "${name}" has a condition that does not contain a direct comparison (for now only "<TOKEN_X> is <TOKEN_Y || ETHER>" and "<variable> is <true || false>" are supported)`
+                        );
+                    }
+
+                    const conditionalVariable = splitCondition[0];
+                    const comparisonVariable = splitCondition[2];
+                    const isBooleanComparison = comparisonVariable === 'true' || comparisonVariable === 'false';
+
                     let replacement = false;
-                    if (conditionalCombination[i] && inputTokenToReplace in inputTokens) {
+                    if (
+                        conditionalCombination[i] &&
+                        conditionalVariable in inputTokens &&
+                        !isBooleanComparison
+                    ) {
                         replacement = true;
-                        const inputValuesToReplace = inputTokens[inputTokenToReplace];
-                        delete inputTokens[inputTokenToReplace];
-                        inputTokens[replacementInputToken] = inputValuesToReplace;
+                        const inputValuesToReplace = inputTokens[conditionalVariable];
+                        delete inputTokens[conditionalVariable];
+                        inputTokens[comparisonVariable] = inputValuesToReplace;
                     }
                     const thenOrElse = conditionalCombination[i] ? "then" : "else";
                     const conditionalActions = action.if[thenOrElse];
@@ -898,9 +904,9 @@ class Validator {
                     );
 
                     if (replacement) {
-                        const inputValuesToReplace = inputTokens[replacementInputToken];
-                        delete inputTokens[replacementInputToken];
-                        inputTokens[inputTokenToReplace] = inputValuesToReplace;
+                        const inputValuesToReplace = inputTokens[comparisonVariable];
+                        delete inputTokens[comparisonVariable];
+                        inputTokens[conditionalVariable] = inputValuesToReplace;
                     }
                 } else if (!TYPE_CHECKERS.rawObject(action)) {
                     inputTokens = Validator.validateInput(action, actionScript, {...inputTokens});

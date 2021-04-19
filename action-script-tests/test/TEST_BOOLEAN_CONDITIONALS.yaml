@@ -1,0 +1,59 @@
+name: TEST_BOOLEAN_CONDITIONALS
+blockNumber: 12272207
+tests:
+  - name: Test double + not triple = 2
+    success: true
+    variables:
+      double: true
+      triple: false
+    results:
+      total: "2"
+    events:
+      - address: "0xF0f74ec3AC73b416A9f1244e0e6D2b59c172fc54"
+        name: Add
+        args:
+          a: "1"
+          b: "1"
+          c: "2"
+  - name: Test double + triple = 6
+    success: true
+    variables:
+      double: true
+      triple: true
+    results:
+      total: "6"
+    events:
+      - address: "0xF0f74ec3AC73b416A9f1244e0e6D2b59c172fc54"
+        name: Add
+        args:
+          a: "3"
+          b: "3"
+          c: "6"
+  - name: Test not double + triple = 3
+    success: true
+    variables:
+      double: false
+      triple: true
+    results:
+      total: "3"
+    events:
+      - address: "0xF0f74ec3AC73b416A9f1244e0e6D2b59c172fc54"
+        name: Add
+        args:
+          a: "3"
+          b: "0"
+          c: "3"
+  - name: Test not double + not triple = 1
+    success: true
+    variables:
+      double: false
+      triple: false
+    results:
+      total: "1"
+    events:
+      - address: "0xF0f74ec3AC73b416A9f1244e0e6D2b59c172fc54"
+        name: Add
+        args:
+          a: "1"
+          b: "0"
+          c: "1"

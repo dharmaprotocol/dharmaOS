@@ -1,0 +1,43 @@
+name: "TEST_BOOLEAN_CONDITIONALS"
+
+summary: "Test boolean conditionals"
+
+variables:
+  double: bool
+  triple: bool
+
+
+results:
+  total: uint256
+
+definitions:
+ - Contract ADDER 0xF0f74ec3AC73b416A9f1244e0e6D2b59c172fc54
+ - Function add ADDER add(uint256,uint256) => uint256
+
+inputs:
+
+actions:
+ - if:
+    condition: double is true
+    then:
+       - if:
+          condition: triple is false
+          then:
+             - ADDER add 1 1 => total
+          else:
+             - ADDER add 3 3 => total
+    else:
+       - if:
+          condition: triple is true
+          then:
+             - ADDER add 3 0 => total
+          else:
+             - ADDER add 1 0 => total
+
+operations:
+
+outputs:
+
+associations:
+
+description: "Test boolean conditionals: doubled => ${doubled} and tripled => ${tripled} = ${total}"
