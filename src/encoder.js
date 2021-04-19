@@ -349,21 +349,29 @@ class Encoder {
 
     constructCallAndResultFormat(action) {
         if (typeof action === 'object' && 'if' in action) {
-            const splitConditon = action.if.condition.split(" ");
-            const tokenToReplace = splitConditon[0];
-            const replacementToken = splitConditon[2];
+            const splitCondition = action.if.condition.split(" ");
+            const conditionalVariable = splitCondition[0];
+            const comparisonVariable = splitCondition[2];
 
-            const tokenToReplaceAddress = this.contracts[tokenToReplace].address;
+            let conditionTrue;
 
-            const conditionTrue = (
-                replacementToken === 'ETHER' &&
-                tokenToReplaceAddress === ETHER_ADDRESS
-            ) || (
-                tokenToReplaceAddress === (
-                    this.contracts[replacementToken] &&
-                    this.contracts[replacementToken].address
-                )
-            );
+            if (comparisonVariable === 'true') {
+                conditionTrue = !!this.variables[conditionalVariable];
+            } else if (comparisonVariable === 'false') {
+                conditionTrue = !this.variables[conditionalVariable];
+            } else {
+                const tokenToReplaceAddress = this.contracts[conditionalVariable].address;
+
+                conditionTrue = (
+                    comparisonVariable === 'ETHER' &&
+                    tokenToReplaceAddress === ETHER_ADDRESS
+                ) || (
+                    tokenToReplaceAddress === (
+                        this.contracts[comparisonVariable] &&
+                        this.contracts[comparisonVariable].address
+                    )
+                );
+            }
 
             const conditionalActions = action.if[conditionTrue ? 'then' : 'else'];
             for (let conditionalAction of conditionalActions) {
