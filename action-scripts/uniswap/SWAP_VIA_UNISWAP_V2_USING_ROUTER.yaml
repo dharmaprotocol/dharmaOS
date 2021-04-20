@@ -1,0 +1,90 @@
+name: "SWAP_VIA_UNISWAP_V2_USING_ROUTER"
+
+summary: "Swap tokens via Uniswap V2"
+
+variables:
+  soldTokenAddress: address
+  soldTokenAmount: uint256
+  boughtTokenAddress: address
+  minimumBoughtTokenAmount: uint256
+  hasTransferFee: bool
+  routeThroughETH: bool
+
+results:
+  boughtTokenAmount: uint256
+
+definitions:
+ - Token SOLD soldTokenAddress
+ - Token BOUGHT boughtTokenAddress
+ - Token WETH 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+ - Contract UNISWAP_ROUTER 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
+ - Function swap UNISWAP_ROUTER swapExactTokensForTokens(uint256,uint256,address[],address,uint256) => uint256[]
+ - Function swapFromETH UNISWAP_ROUTER swapExactETHForTokens(uint256,address[],address,uint256):payable => uint256[]
+ - Function swapToETH UNISWAP_ROUTER swapExactTokensForETH(uint256,uint256,address[],address,uint256) => uint256[]
+ - Function swapWithTransferFee UNISWAP_ROUTER swapExactTokensForTokensSupportingFeeOnTransferTokens(uint256,uint256,address[],address,uint256)
+ - Function swapFromETHWithTransferFee UNISWAP_ROUTER swapExactETHForTokensSupportingFeeOnTransferTokens(uint256,address[],address,uint256):payable
+ - Function swapToETHWithTransferFee UNISWAP_ROUTER swapExactTokensForETHSupportingFeeOnTransferTokens(uint256,uint256,address[],address,uint256)
+ - Contract ETH_BALANCE_OF 0x18410A9e3B317C1B5fa89177de671B0A840A0d10
+ - Function ethBalance ETH_BALANCE_OF balance() => uint256
+
+
+inputs:
+ - SOLD: soldTokenAmount
+
+actions:
+ - if:
+    condition: SOLD is ETHER
+    then:
+       - if:
+          condition: hasTransferFee is true
+          then:
+             - BOUGHT balanceOf wallet => initialBoughtTokenAmount
+             - UNISWAP_ROUTER swapFromETHWithTransferFee:soldTokenAmount minimumBoughtTokenAmount [WETH,BOUGHT] wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF
+             - BOUGHT balanceOf wallet => finalBoughtTokenAmount
+          else:
+             - UNISWAP_ROUTER swapFromETH:soldTokenAmount minimumBoughtTokenAmount [WETH,BOUGHT] wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => [wethSold,boughtTokenAmount]
+    else:
+       - SOLD approve UNISWAP_ROUTER soldTokenAmount
+       - if:
+          condition: BOUGHT is ETHER
+          then:
+             - if:
+                condition: hasTransferFee is true
+                then:
+                   - ETH_BALANCE_OF ethBalance => initialBoughtTokenAmount
+                   - UNISWAP_ROUTER swapToETHWithTransferFee soldTokenAmount minimumBoughtTokenAmount [SOLD,WETH] wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF
+                   - ETH_BALANCE_OF ethBalance => finalBoughtTokenAmount
+                else:
+                   - UNISWAP_ROUTER swapToETH soldTokenAmount minimumBoughtTokenAmount [SOLD,WETH] wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => [tokensSold,boughtTokenAmount]
+          else:
+             - if:
+                condition: routeThroughETH is true
+                then:
+                   - if:
+                      condition: hasTransferFee is true
+                      then:
+                         - BOUGHT balanceOf wallet => initialBoughtTokenAmount
+                         - UNISWAP_ROUTER swapWithTransferFee soldTokenAmount minimumBoughtTokenAmount [SOLD,WETH,BOUGHT] wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF
+                         - BOUGHT balanceOf wallet => finalBoughtTokenAmount
+                      else:
+                         - UNISWAP_ROUTER swap soldTokenAmount minimumBoughtTokenAmount [SOLD,WETH,BOUGHT] wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => [tokensSold,wethSold,boughtTokenAmount]
+                else:
+                   - if:
+                      condition: hasTransferFee is true
+                      then:
+                         - BOUGHT balanceOf wallet => initialBoughtTokenAmount
+                         - UNISWAP_ROUTER swapWithTransferFee soldTokenAmount minimumBoughtTokenAmount [SOLD,BOUGHT] wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF
+                         - BOUGHT balanceOf wallet => finalBoughtTokenAmount
+                      else:
+                         - UNISWAP_ROUTER swap soldTokenAmount minimumBoughtTokenAmount [SOLD,BOUGHT] wallet 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF => [tokensSold,boughtTokenAmount]
+
+operations:
+ - finalBoughtTokenAmount - initialBoughtTokenAmount => boughtTokenAmount
+
+outputs:
+ - BOUGHT: boughtTokenAmount
+
+associations:
+  - BOUGHT: minimumBoughtTokenAmount
+
+description: "Swap ${soldTokenAmount:SOLD.decimals} ${SOLD.symbol} for ${boughtTokenAmount:BOUGHT.decimals} ${BOUGHT.symbol} on Uniswap V2"

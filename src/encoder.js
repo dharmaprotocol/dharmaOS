@@ -483,6 +483,21 @@ class Encoder {
                     });
 
                     appliedArgs.push(Encoder.typeZeroPaddings(returndata.type));
+                } else if (arg && arg.startsWith("[") && arg.endsWith("]")) {
+                    const arrayArgs = arg
+                        .slice(1, -1)
+                        .split(',')
+                        .map(arrayArg => {
+                            if (arrayArg in this.variables) {
+                                return this.variables[arrayArg];
+                            } else if (arrayArg in this.targetContracts) {
+                                return this.targetContracts[arrayArg].address;
+                            } else {
+                                return arrayArg;
+                            }
+                        });
+
+                    appliedArgs.push(arrayArgs);
                 } else {
                     appliedArgs.push(arg);
                 }

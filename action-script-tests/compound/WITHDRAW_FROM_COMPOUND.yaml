@@ -22,7 +22,7 @@ tests:
         args:
           cToken: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643"
           supplier: wallet
-          compDelta: "30950097"
+          compDelta: "61900194"
           compSupplyIndex: "43245735417537899385849436155527877603727"
       - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
         name: Transfer
