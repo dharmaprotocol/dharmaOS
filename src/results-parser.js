@@ -86,22 +86,47 @@ class ResultsParser {
             }
         }
 
-        for (let [callIndex, callTarget] of Object.entries(
+        for (const [callIndex, callTarget] of Object.entries(
             this.resultToParse
         )) {
             if (callIndex >= breakIndex) {
                 break;
             }
 
-            for (let [resultIndex, resultName] of Object.entries(callTarget)) {
+            for (const [resultIndex, resultName] of Object.entries(callTarget)) {
                 const rawParsedResult =
                     results[callIndex].orderedResults[resultIndex];
-                const parsedResult = ethers.BigNumber.isBigNumber(
-                    rawParsedResult
-                )
-                    ? rawParsedResult.toString()
-                    : rawParsedResult;
-                parsedResults[resultName] = parsedResult;
+
+                if (
+                    typeof rawParsedResult === 'object' &&
+                    Array.isArray(rawParsedResult) &&
+                    resultName.startsWith("[") &&
+                    resultName.endsWith("]")
+                ) {
+                    const subResultNames = resultName
+                        .slice(1, -1)
+                        .split(',')
+                        .slice(0, rawParsedResult.length);
+
+                    for (const [subResultNameIndex, subResultName] of Object.entries(subResultNames)) {
+                        const subResult = rawParsedResult[subResultNameIndex];
+
+                        const parsedResult = ethers.BigNumber.isBigNumber(
+                            subResult
+                        )
+                            ? subResult.toString()
+                            : subResult;
+
+                        parsedResults[subResultName] = parsedResult;
+                    }
+                } else {
+                    const parsedResult = ethers.BigNumber.isBigNumber(
+                        rawParsedResult
+                    )
+                        ? rawParsedResult.toString()
+                        : rawParsedResult;
+                    parsedResults[resultName] = parsedResult;
+                }
             }
         }
 

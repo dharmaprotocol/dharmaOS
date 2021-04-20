@@ -576,7 +576,7 @@ async function evaluate(actionScriptName, variables, blockNumber) {
                 );
                 try {
                     await router.swapETHForExactTokens(
-                        amount,
+                        ethers.BigNumber.from(amount).mul(2), // deal with fee-on-transfer
                         [wethAddress, tokenAddress],
                         wallet.address,
                         99999999999999,

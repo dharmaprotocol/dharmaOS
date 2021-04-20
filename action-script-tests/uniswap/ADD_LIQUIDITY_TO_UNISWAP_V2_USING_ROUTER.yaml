@@ -1,7 +1,8 @@
 name: ADD_LIQUIDITY_TO_UNISWAP_V2_USING_ROUTER
 blockNumber: 11882802
 tests:
-  - name: Add liquidity to Uniswap pairs, supplying Ether as "token" A and Dai as token B
+  - name: Add liquidity to Uniswap pairs, supplying both tokens that make up the
+      pair and minting LP tokens
     success: true
     variables:
       tokenAAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
@@ -12,8 +13,8 @@ tests:
       amountBMin: "1725000000000000000000"
       liquidityTokenAddress: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
     results:
-      receivedLiquidityAmount: "33741660367731950295"
-      suppliedAmountA: "999648185712729823"
+      receivedLiquidityAmount: "33742473139243562449"
+      suppliedAmountA: "999696417941918786"
       suppliedAmountB: "1925000000000000000000"
     events:
       - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
@@ -32,138 +33,27 @@ tests:
         name: Deposit
         args:
           dst: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
-          wad: "999648185712729823"
+          wad: "999696417941918786"
       - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
         name: Transfer
         args:
           from: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
           to: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
-          value: "999648185712729823"
+          value: "999696417941918786"
       - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
         name: Transfer
         args:
           from: "0x0000000000000000000000000000000000000000"
           to: wallet
-          value: "33741660367731950295"
+          value: "33742473139243562449"
       - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
         name: Sync
         args:
-          reserve0: "79918924876393488077794325"
-          reserve1: "41501718574960364108703"
+          reserve0: "79916999876393488077794325"
+          reserve1: "41502721303426148789058"
       - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
         name: Mint
         args:
           sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
           amount0: "1925000000000000000000"
-          amount1: "999648185712729823"
-  - name: Add liquidity to Uniswap pairs, supplying USDC as token A and Ether as "token" B
-    success: true
-    variables:
-      tokenAAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-      tokenBAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
-      amountBDesired: "1000000000000000000"
-      amountADesired: "1925000000"
-      amountBMin: "900000000000000000"
-      amountAMin: "1725000000"
-      liquidityTokenAddress: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
-    results:
-      receivedLiquidityAmount: "31177886356401"
-      suppliedAmountA: "1920982458"
-      suppliedAmountB: "1000000000000000000"
-    events:
-      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-        name: Approval
-        args:
-          owner: wallet
-          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
-          value: "1925000000"
-      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-        name: Transfer
-        args:
-          from: wallet
-          to: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
-          value: "1920982458"
-      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-        name: Deposit
-        args:
-          dst: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
-          wad: "1000000000000000000"
-      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-        name: Transfer
-        args:
-          from: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
-          to: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
-          value: "1000000000000000000"
-      - address: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
-        name: Transfer
-        args:
-          from: "0x0000000000000000000000000000000000000000"
-          to: wallet
-          value: "31177886356401"
-      - address: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
-        name: Sync
-        args:
-          reserve0: "179706046633235"
-          reserve1: "93549030526257425939452"
-      - address: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
-        name: Mint
-        args:
-          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
-          amount0: "1920982458"
-          amount1: "1000000000000000000"
-  - name: Add liquidity to Uniswap pairs, supplying USDC as token A and Dai as token B
-    success: true
-    variables:
-      tokenAAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-      tokenBAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
-      amountBDesired: "1000000000000000000"
-      amountADesired: "1000000"
-      amountBMin: "900000000000000000"
-      amountAMin: "900000"
-      liquidityTokenAddress: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
-    results:
-      receivedLiquidityAmount: "910802333790"
-      suppliedAmountA: "1000000"
-      suppliedAmountB: "997440951406727702"
-    events:
-      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-        name: Approval
-        args:
-          owner: wallet
-          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
-          value: "1000000"
-      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
-        name: Approval
-        args:
-          owner: wallet
-          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
-          value: "1000000000000000000"
-      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-        name: Transfer
-        args:
-          from: wallet
-          to: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
-          value: "1000000"
-      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
-        name: Transfer
-        args:
-          from: wallet
-          to: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
-          value: "997440951406727702"
-      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
-        name: Transfer
-        args:
-          from: "0x0000000000000000000000000000000000000000"
-          to: wallet
-          value: "910802333790"
-      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
-        name: Sync
-        args:
-          reserve0: "11415805721333929622338693"
-          reserve1: "11445094273735"
-      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
-        name: Mint
-        args:
-          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
-          amount0: "997440951406727702"
-          amount1: "1000000"
+          amount1: "999696417941918786"

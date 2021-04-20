@@ -1,0 +1,427 @@
+name: SWAP_VIA_UNISWAP_V2_USING_ROUTER
+blockNumber: 12273681
+tests:
+  - name: Swap ETH for token via Uniswap V2
+    success: true
+    variables:
+      soldTokenAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+      boughtTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      soldTokenAmount: "1000000000000000000"
+      minimumBoughtTokenAmount: "2000000000000000000000"
+      hasTransferFee: false
+      routeThroughETH: false
+    results:
+      boughtTokenAmount: "2144106275512007072592"
+    events:
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Deposit
+        args:
+          dst: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          wad: "1000000000000000000"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Transfer
+        args:
+          from: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          to: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+          value: "1000000000000000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+          to: wallet
+          value: "2144106275512007072592"
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Sync
+        args:
+          reserve0: "59531348274671983828778613"
+          reserve1: "27682815452769328135697"
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Swap
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0In: "0"
+          amount1In: "1000000000000000000"
+          amount0Out: "2144106275512007072592"
+          amount1Out: "0"
+          to: wallet
+  - name: Swap ETH for fee-on-transfer token via Uniswap V2
+    success: true
+    variables:
+      soldTokenAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+      boughtTokenAddress: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+      soldTokenAmount: "1000000000000000000"
+      minimumBoughtTokenAmount: "27000000000000000000000"
+      hasTransferFee: true
+      routeThroughETH: false
+    results:
+      boughtTokenAmount: "27116310960844340129383"
+    events:
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Deposit
+        args:
+          dst: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          wad: "1000000000000000000"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Transfer
+        args:
+          from: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          to: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+          value: "1000000000000000000"
+      - address: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+        name: Transfer
+        args:
+          from: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+          to: wallet
+          value: "27116310960844340129383"
+      - address: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+        name: Transfer
+        args:
+          from: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+          to: "0x0000000000000000000000000000000000000000"
+          value: "273902130917619597267"
+      - address: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+        name: Sync
+        args:
+          reserve0: "2381024612906277507926777"
+          reserve1: "87668969354661250715"
+      - address: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+        name: Swap
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0In: "0"
+          amount1In: "1000000000000000000"
+          amount0Out: "27390213091761959726650"
+          amount1Out: "0"
+          to: wallet
+  - name: Swap token for ETH via Uniswap V2
+    success: true
+    variables:
+      soldTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      boughtTokenAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+      soldTokenAmount: "1000000000000000000"
+      minimumBoughtTokenAmount: "450000000000000"
+      hasTransferFee: false
+      routeThroughETH: false
+    results:
+      boughtTokenAmount: "463583947414714"
+    events:
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "1000000000000000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+          value: "1000000000000000000"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Transfer
+        args:
+          from: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+          to: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "463583947414714"
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Sync
+        args:
+          reserve0: "59533491380947495835851205"
+          reserve1: "27681815921941401154496"
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Swap
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0In: "1000000000000000000"
+          amount1In: "0"
+          amount0Out: "0"
+          amount1Out: "463583947414714"
+          to: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Withdrawal
+        args:
+          src: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          wad: "463583947414714"
+  - name: Swap fee-on-transfer token for ETH via Uniswap V2
+    success: true
+    variables:
+      soldTokenAddress: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+      boughtTokenAddress: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+      soldTokenAmount: "1000000000000000000"
+      minimumBoughtTokenAmount: "35000000000000"
+      hasTransferFee: true
+      routeThroughETH: false
+    results:
+      boughtTokenAmount: "35519205051690"
+    events:
+      - address: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "1000000000000000000"
+      - address: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+          value: "990000000000000000"
+      - address: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0x0000000000000000000000000000000000000000"
+          value: "10000000000000000"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Transfer
+        args:
+          from: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+          to: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "35519205051690"
+      - address: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+        name: Sync
+        args:
+          reserve0: "2408413815998039467653427"
+          reserve1: "86669006023876466659"
+      - address: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+        name: Swap
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0In: "990000000000000000"
+          amount1In: "0"
+          amount0Out: "0"
+          amount1Out: "35519205051690"
+          to: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Withdrawal
+        args:
+          src: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          wad: "35519205051690"
+  - name: Swap token for token directly via Uniswap V2
+    success: true
+    variables:
+      soldTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      boughtTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+      soldTokenAmount: "1000000000000000000"
+      minimumBoughtTokenAmount: "990000"
+      hasTransferFee: false
+      routeThroughETH: false
+    results:
+      boughtTokenAmount: "998355"
+    events:
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "1000000000000000000"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+          value: "1000000000000000000"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+          to: wallet
+          value: "998355"
+      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+        name: Sync
+        args:
+          reserve0: "12533013466214723614883983"
+          reserve1: "12550056532532"
+      - address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+        name: Swap
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0In: "1000000000000000000"
+          amount1In: "0"
+          amount0Out: "0"
+          amount1Out: "998355"
+          to: wallet
+  - name: Swap token for token directly with fee-on-transfer support via Uniswap V2
+    success: true
+    variables:
+      soldTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+      boughtTokenAddress: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+      soldTokenAmount: "1000000"
+      minimumBoughtTokenAmount: "2000000000"
+      hasTransferFee: true
+      routeThroughETH: false
+    results:
+      boughtTokenAmount: "2401826310"
+    events:
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "1000000"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0x6706cF561d623F7A462e3A26F0040A6084Ecf1E2"
+          value: "1000000"
+      - address: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+        name: Transfer
+        args:
+          from: "0x6706cF561d623F7A462e3A26F0040A6084Ecf1E2"
+          to: wallet
+          value: "2401826310"
+      - address: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+        name: Transfer
+        args:
+          from: "0x6706cF561d623F7A462e3A26F0040A6084Ecf1E2"
+          to: "0x0000000000000000000000000000000000000000"
+          value: "24260872"
+      - address: "0x6706cF561d623F7A462e3A26F0040A6084Ecf1E2"
+        name: Sync
+        args:
+          reserve0: "1000001"
+          reserve1: "2434"
+      - address: "0x6706cF561d623F7A462e3A26F0040A6084Ecf1E2"
+        name: Swap
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0In: "1000000"
+          amount1In: "0"
+          amount0Out: "0"
+          amount1Out: "2426087182"
+          to: wallet
+  - name: Swap token for token routed through ETH via Uniswap V2
+    success: true
+    variables:
+      soldTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+      boughtTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      soldTokenAmount: "1000000"
+      minimumBoughtTokenAmount: "990000000000000000"
+      hasTransferFee: false
+      routeThroughETH: true
+    results:
+      boughtTokenAmount: "996284382030606771"
+    events:
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "1000000"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+          value: "1000000"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Transfer
+        args:
+          from: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+          to: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+          value: "464645119867697"
+      - address: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+        name: Sync
+        args:
+          reserve0: "152535746537133"
+          reserve1: "71088254532808132360899"
+      - address: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+        name: Swap
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0In: "1000000"
+          amount1In: "0"
+          amount0Out: "0"
+          amount1Out: "464645119867697"
+          to: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+          to: wallet
+          value: "996284382030606771"
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Sync
+        args:
+          reserve0: "59533491384663113805244434"
+          reserve1: "27681815917414448003394"
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Swap
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0In: "0"
+          amount1In: "464645119867697"
+          amount0Out: "996284382030606771"
+          amount1Out: "0"
+          to: wallet
+  - name: Swap token for token routed through ETH with fee-on-transfer support via Uniswap V2
+    success: true
+    variables:
+      soldTokenAddress: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+      boughtTokenAddress: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      soldTokenAmount: "1000000000000000000"
+      minimumBoughtTokenAmount: "75000000000000000"
+      hasTransferFee: true
+      routeThroughETH: true
+    results:
+      boughtTokenAmount: "76159693256108481"
+    events:
+      - address: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          value: "1000000000000000000"
+      - address: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+          value: "990000000000000000"
+      - address: "0xa7DE087329BFcda5639247F96140f9DAbe3DeED1"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0x0000000000000000000000000000000000000000"
+          value: "10000000000000000"
+      - address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        name: Transfer
+        args:
+          from: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+          to: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+          value: "35519205051690"
+      - address: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+        name: Sync
+        args:
+          reserve0: "2408413815998039467653427"
+          reserve1: "86669006023876466659"
+      - address: "0x59F96b8571E3B11f859A09Eaf5a790A138FC64D0"
+        name: Swap
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0In: "990000000000000000"
+          amount1In: "0"
+          amount0Out: "0"
+          amount1Out: "35519205051690"
+          to: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+      - address: "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+        name: Transfer
+        args:
+          from: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+          to: wallet
+          value: "76159693256108481"
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Sync
+        args:
+          reserve0: "59533492304787802579742724"
+          reserve1: "27681815488288533187387"
+      - address: "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+        name: Swap
+        args:
+          sender: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+          amount0In: "0"
+          amount1In: "35519205051690"
+          amount0Out: "76159693256108481"
+          amount1Out: "0"
+          to: wallet
