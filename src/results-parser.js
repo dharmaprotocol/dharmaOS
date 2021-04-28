@@ -80,8 +80,8 @@ class ResultsParser {
         let parsedResults = {};
         let parsedResultsBySequence = [{}];
 
-        if (!!sequenceCallIndices && sequenceCallIndices.length > 0) {
-            parsedResultsBySequence = Array(sequenceCallIndices.length).fill({});
+        if (!!this.sequenceCallIndices && this.sequenceCallIndices.length > 0) {
+            parsedResultsBySequence = Array(this.sequenceCallIndices.length).fill({});
         }
 
         let breakIndex = results.length;
@@ -103,11 +103,11 @@ class ResultsParser {
             }
 
             let sequenceIndex = 0;
-            if (!!sequenceCallIndices) {
-                sequenceIndex = sequenceCallIndices.length - 1;
+            if (!!this.sequenceCallIndices) {
+                sequenceIndex = this.sequenceCallIndices.length - 1;
 
-                for (i = 0; i < sequenceCallIndices.length - 1; i++) {
-                    if (sequenceCallIndices[i + 1] > callIndex) {
+                for (let i = 0; i < this.sequenceCallIndices.length - 1; i++) {
+                    if (this.sequenceCallIndices[i + 1] > callIndex) {
                         sequenceIndex = i;
                     }
                 }
@@ -180,7 +180,7 @@ class ResultsParser {
             const {
                 finalResults,
                 newParsedResultsBySequence,
-            } = runOperationsAndFilterResults(
+            } = this.runOperationsAndFilterResults(
                 this.actionScript, parsedResultsBySequence, 0
             );
 
@@ -204,7 +204,7 @@ class ResultsParser {
 
             const context = {
                 ...this.variables,
-                ...parsedResults,
+                ...parsedResultsBySequence, // TODO: check if this is correct
             };
 
             // Skip operation if result already exists
