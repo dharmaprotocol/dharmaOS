@@ -11,6 +11,7 @@ class ResultsParser {
         contract,
         variables,
         isAdvanced,
+        sequenceCallIndices = null,
     }) {
         const resultsParser = new ResultsParser({
             actionScript,
@@ -21,6 +22,7 @@ class ResultsParser {
             contract,
             variables,
             isAdvanced,
+            sequenceCallIndices,
         });
 
         return resultsParser.parse();
@@ -36,6 +38,7 @@ class ResultsParser {
             contract,
             variables,
             isAdvanced,
+            sequenceCallIndices = null,
         } = args;
 
         this.actionScript = actionScript;
@@ -50,6 +53,7 @@ class ResultsParser {
                 ? isAdvanced
                 : Validator.isAdvanced(actionScript)
         );
+        this.sequenceCallIndices = sequenceCallIndices;
     }
 
     parse() {
@@ -74,6 +78,11 @@ class ResultsParser {
         );
 
         let parsedResults = {};
+        let parsedResultsBySequence = [{}];
+
+        if (!!sequenceCallIndices && sequenceCallIndices.length > 0) {
+            parsedResultsBySequence = Array(sequenceCallIndices.length).fill({});
+        }
 
         let breakIndex = results.length;
         for (let [i, result] of Object.entries(results)) {
@@ -91,6 +100,17 @@ class ResultsParser {
         )) {
             if (callIndex >= breakIndex) {
                 break;
+            }
+
+            let sequenceIndex = 0;
+            if (!!sequenceCallIndices) {
+                sequenceIndex = sequenceCallIndices.length - 1;
+
+                for (i = 0; i < sequenceCallIndices.length - 1; i++) {
+                    if (sequenceCallIndices[i + 1] > callIndex) {
+                        sequenceIndex = i;
+                    }
+                }
             }
 
             for (const [resultIndex, resultName] of Object.entries(callTarget)) {
@@ -118,6 +138,7 @@ class ResultsParser {
                             : subResult;
 
                         parsedResults[subResultName] = parsedResult;
+                        parsedResultsBySequence[sequenceIndex][subResultName] = parsedResult;
                     }
                 } else {
                     const parsedResult = ethers.BigNumber.isBigNumber(
@@ -126,12 +147,57 @@ class ResultsParser {
                         ? rawParsedResult.toString()
                         : rawParsedResult;
                     parsedResults[resultName] = parsedResult;
+                    parsedResultsBySequence[sequenceIndex][resultName] = parsedResult;
                 }
             }
         }
 
         // run operations
-        const operations = this.actionScript.operations || [];
+        if (Array.isArray(this.actionScript)) {
+            let combinedFinalResults = {};
+            for (let i = 0; i < this.actionScript.length; i++) {
+                const actionScript = this.actionScript[i];
+
+                const {
+                    finalResults,
+                    newParsedResultsBySequence,
+                } = runOperationsAndFilterResults(
+                    actionScript, parsedResultsBySequence, i
+                );
+
+                combinedFinalResults = {...combinedFinalResults, ...finalResults};
+                parsedResultsBySequence = newParsedResultsBySequence;
+            }
+
+            return {
+                success,
+                parsedReturnData: results,
+                results: combinedFinalResults,
+                resultsBySequence: parsedResultsBySequence,
+                revertReason: this.revertReason,
+            };
+        } else {
+            const {
+                finalResults,
+                newParsedResultsBySequence,
+            } = runOperationsAndFilterResults(
+                this.actionScript, parsedResultsBySequence, 0
+            );
+
+            return {
+                success,
+                parsedReturnData: results,
+                results: finalResults,
+                resultsBySequence: parsedResultsBySequence,
+                revertReason: this.revertReason,
+            };
+        }
+    }
+
+    runOperationsAndFilterResults(actionScript, parsedResultsBySequence, sequenceIndex) {
+        let newParsedResultsBySequence = {...parsedResultsBySequence};
+
+        const operations = actionScript.operations || [];
 
         for (let operation of operations) {
             const [input, output] = operation.split(" => ");
@@ -142,24 +208,24 @@ class ResultsParser {
             };
 
             // Skip operation if result already exists
-            if (!(output in parsedResults)) {
-                parsedResults[output] = this.evaluateOperation(input, context);
+            if (!(output in newParsedResultsBySequence[sequenceIndex])) {
+                newParsedResultsBySequence[sequenceIndex][output] = this.evaluateOperation(input, context);
             }
         }
 
         const finalResults = {};
-        const expectedResults = this.actionScript.results || {};
+        const expectedResults = actionScript.results || {};
         for (let expectedResult of Object.keys(expectedResults)) {
-            if (expectedResult in parsedResults) {
-                finalResults[expectedResult] = parsedResults[expectedResult];
+            if (expectedResult in newParsedResultsBySequence[sequenceIndex]) {
+                finalResults[expectedResult] = newParsedResultsBySequence[sequenceIndex][expectedResult];
             }
         }
 
+        newParsedResultsBySequence[sequenceIndex] = finalResults;
+
         return {
-            success,
-            parsedReturnData: results,
-            results: finalResults,
-            revertReason: this.revertReason,
+            finalResults,
+            newParsedResultsBySequence,
         };
     }
 

@@ -271,11 +271,15 @@ class Encoder {
         return encoder.encode();
     }
 
-    constructor(actionScript, variables, wallet) {
+    constructor(actionScript, variables, wallet, isAdvanced = null) {
         this.actionScript = actionScript;
         this.variables = variables;
         this.variables["wallet"] = wallet;
-        this.isAdvanced = Validator.isAdvanced(actionScript);
+        this.isAdvanced = (
+            isAdvanced !== null
+                ? Validator.isAdvanced(actionScript)
+                : !!isAdvanced
+        );
     }
 
     encode() {
@@ -286,6 +290,57 @@ class Encoder {
             calls: this.calls,
             callABIs: this.callABIs,
             resultToParse: this.resultToParse,
+            isAdvanced: this.isAdvanced,
+        };
+    }
+
+    encodeSequence({sequence, variables, wallet}) {
+        this.sequence = sequence;
+        this.variables = variables;
+        this.variables["wallet"] = wallet;
+
+        this.isAdvanced = sequence.map(s => (
+            !!s.resultsToApply && s.resultsToApply.length > 0 ||
+            Validator.isAdvanced(s.actionScript)
+        ));
+
+        resultsToApply = [
+            {
+                sequenceIndex: 0,
+                result: "abc",
+                variable: "xyz",
+            }
+        ];
+
+        let sequenceCallIndex = 0;
+        const encoded = [];
+        const sequenceKnownCallResultVariables = [];
+        for (const { actionScript, resultsToApply } of sequence) {
+            const encoder = new Encoder(
+                actionScript, this.variables, wallet, this.isAdvanced
+            );
+            encoder.parseActionScriptDefinitions();
+            encoder.callIndex = sequenceCallIndex;
+            encoder.knownCallResultVariables = {}
+            for (const { sequenceIndex, result, variable } of resultsToApply) {
+                const resultToApply = sequenceKnownCallResultVariables[sequenceIndex][result];
+                encoder.knownCallResultVariables[variable] = resultToApply;
+            }
+            encoded.push(encoder.encode());
+            sequenceCallIndex = encoder.callIndex;
+            sequenceKnownCallResultVariables.push(encoder.knownCallResultVariables);
+        }
+
+        const calls = [].concat(...encoded.map(x => x.calls));
+        const callABIs = [].concat(...encoded.map(x => x.callABIs));
+        const resultToParse = encoded
+            .map(x => x.resultToParse)
+            .reduce((result, obj) => Object.assign({}, result, obj), {});
+
+        return {
+            calls,
+            callABIs,
+            resultToParse,
             isAdvanced: this.isAdvanced,
         };
     }
@@ -706,8 +761,8 @@ class Encoder {
             };
         }
 
-        this.callIndex = 0;
-        this.knownCallResultVariables = {};
+        this.callIndex = this.callIndex || 0;
+        this.knownCallResultVariables = this.knownCallResultVariables || {};
         for (let action of actions) {
             this.constructCallAndResultFormat(action);
         }
