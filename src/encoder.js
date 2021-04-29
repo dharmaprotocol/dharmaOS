@@ -305,6 +305,7 @@ class Encoder {
         const encoded = [];
         const sequenceKnownCallResultVariables = [];
         const sequenceCallIndices = [];
+        let calls = [];
         for (const { actionScript, resultsToApply } of sequence) {
             const encoder = new Encoder(
                 actionScript, variables, wallet, isAdvanced
@@ -312,6 +313,7 @@ class Encoder {
 
             encoder.parseActionScriptDefinitions();
             encoder.callIndex = sequenceCallIndex;
+            encoder.calls = calls;
             sequenceCallIndices.push(sequenceCallIndex);
 
             for (const { sequenceIndex, result, variable } of resultsToApply) {
@@ -320,11 +322,11 @@ class Encoder {
             }
 
             encoded.push(encoder.encode());
+            calls = encoder.calls;
             sequenceCallIndex = encoder.callIndex;
             sequenceKnownCallResultVariables.push(encoder.knownCallResultVariables);
         }
 
-        const calls = [].concat(...encoded.map(x => x.calls));
         const callABIs = [].concat(...encoded.map(x => x.callABIs));
         const resultToParse = encoded
             .map(x => x.resultToParse)
@@ -349,7 +351,7 @@ class Encoder {
         }
 
         if (type.includes("[")) {
-            throw new Error("Typed array types are not yet supported.");
+            throw new Error("Typed array size cannot be inferred from type alone.");
         }
 
         if (type.includes("(")) {
@@ -359,7 +361,91 @@ class Encoder {
         return 32;
     }
 
-    static typeZeroPaddings(type) {
+    deriveTypedArrayElementTotals() {
+        const { definitions } = this.actionScript;
+
+        // find the argument index of all typed arrays for each defined function
+        const typedArrayIndicesByFunction = definitions
+            .filter(definition => definition.startsWith("Function "))
+            .map(definition => {
+                const functionName = definition.split(' ')[1];
+                const callArgumentTypes = Encoder.parseCallArgumentTypes(definition);
+                const typedArrayArgumentsByIndex = callArgumentTypes
+                    .map((e, i) => e.endsWith('[]') ? i : null)
+                    .filter(e => e !== null);
+
+                const callReturnTypes = Encoder.parseCallReturnTypes(definition);
+                const typedArrayReturnsByIndex = callReturnTypes
+                    .map((e, i) => e.endsWith('[]') ? i : null)
+                    .filter(e => e !== null);
+
+                return [
+                    functionName,
+                    {
+                        typedArrayArgumentsByIndex,
+                        typedArrayReturnsByIndex,
+                    }
+                ];
+            }).reduce(
+                (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+                {}
+            );
+
+        this.typedArrayElementTotals = this.actions
+            .filter(action => (
+                action.split(' ')[1].split(':')[0] in typedArrayIndicesByFunction
+            )).map(action => {
+                const argumentElementTotals = {};
+                const returnElementTotals = {};
+
+                const functionName = action.split(' ')[1].split(':')[0];
+                const argumentValues = action
+                    .split(' => ')[0]
+                    .split(' ')
+                    .slice(2)
+                    .filter(x => x)
+                    .map(x => x.trim(" "));
+
+                const returnValues = (action.split(' => ')[1] || '')
+                    .split(' ')
+                    .filter(x => x)
+                    .map(x => x.trim(" "));
+
+                const {
+                    typedArrayArgumentsByIndex,
+                    typedArrayReturnsByIndex,
+                } = typedArrayIndicesByFunction[functionName];
+
+                for (const i of typedArrayArgumentsByIndex) {
+                    const argumentValue = argumentValues[i];
+                    // Note: nested arrays are not yet supported.
+                    if (argumentValue.startsWith("[") && argumentValue.endsWith("]")) {
+                        argumentElementTotals[i] = argumentValue.split(",").length;
+                    }
+                }
+
+                for (const i of typedArrayReturnsByIndex) {
+                    const returnValue = returnValues[i];
+                    // Note: nested arrays are not yet supported.
+                    if (returnValue.startsWith("[") && returnValue.endsWith("]")) {
+                        returnElementTotals[i] = returnValue.split(",").length;
+                    }
+                }
+
+                return [
+                    functionName,
+                    {
+                        argumentElementTotals,
+                        returnElementTotals,
+                    }
+                ];
+            }).reduce(
+                (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+                {}
+            );
+    }
+
+    static typeZeroPaddings(type, knownSize = null) {
         if (typeof type !== "string") {
             throw new Error("Types must be formatted as strings.");
         }
@@ -369,7 +455,18 @@ class Encoder {
         }
 
         if (type.includes("[")) {
-            throw new Error("Typed array types are not yet supported.");
+            if (knownSize === null) {
+                throw new Error(
+                    "Typed array types without a known size are not supported."
+                );
+            }
+            const [typedArrayType, rest] = type.split("[");
+            if (rest !== "]") {
+                throw new Error(
+                    "Nested typed array types are not yet supported."
+                );
+            }
+            return Array(knownSize).fill(Encoder.typeZeroPaddings(typedArrayType));
         }
 
         if (type.includes("(")) {
@@ -378,6 +475,10 @@ class Encoder {
 
         if (type === "bool") {
             return false;
+        }
+
+        if (type === "address") {
+            return "0x0000000000000000000000000000000000000000";
         }
 
         if (type.startsWith("uint")) {
@@ -396,37 +497,53 @@ class Encoder {
         throw new Error(`Zero-padding for type "${type}" not yet implemented!`);
     }
 
-    constructCallAndResultFormat(action) {
-        if (typeof action === 'object' && 'if' in action) {
-            const splitCondition = action.if.condition.split(" ");
-            const conditionalVariable = splitCondition[0];
-            const comparisonVariable = splitCondition[2];
+    determineConditionalActions(action) {
+        if (!(typeof action === 'object' && 'if' in action)) {
+            throw new Error("Attempting to branch on a non-conditional action.");
+        }
 
-            let conditionTrue;
+        const splitCondition = action.if.condition.split(" ");
+        const conditionalVariable = splitCondition[0];
+        const comparisonVariable = splitCondition[2];
 
-            if (comparisonVariable === 'true') {
-                conditionTrue = !!this.variables[conditionalVariable];
-            } else if (comparisonVariable === 'false') {
-                conditionTrue = !this.variables[conditionalVariable];
+        let conditionTrue;
+
+        if (comparisonVariable === 'true') {
+            conditionTrue = !!this.variables[conditionalVariable];
+        } else if (comparisonVariable === 'false') {
+            conditionTrue = !this.variables[conditionalVariable];
+        } else {
+            const tokenToReplaceAddress = this.contracts[conditionalVariable].address;
+
+            conditionTrue = (
+                comparisonVariable === 'ETHER' &&
+                tokenToReplaceAddress === ETHER_ADDRESS
+            ) || (
+                tokenToReplaceAddress === (
+                    this.contracts[comparisonVariable] &&
+                    this.contracts[comparisonVariable].address
+                )
+            );
+        }
+
+        return action.if[conditionTrue ? 'then' : 'else'] || [];
+    }
+
+    flatten(actions) {
+        const flatActions = [];
+        for (const action of actions) {
+            if (typeof action === 'object' && 'if' in action) {
+                const conditionalActions = this.determineConditionalActions(action);
+                flatActions.push(...this.flatten(conditionalActions));
             } else {
-                const tokenToReplaceAddress = this.contracts[conditionalVariable].address;
-
-                conditionTrue = (
-                    comparisonVariable === 'ETHER' &&
-                    tokenToReplaceAddress === ETHER_ADDRESS
-                ) || (
-                    tokenToReplaceAddress === (
-                        this.contracts[comparisonVariable] &&
-                        this.contracts[comparisonVariable].address
-                    )
-                );
+                flatActions.push(action);
             }
+        }
+        return flatActions;
+    }
 
-            const conditionalActions = action.if[conditionTrue ? 'then' : 'else'];
-            for (let conditionalAction of conditionalActions) {
-                this.constructCallAndResultFormat(conditionalAction);
-            }
-        } else if (typeof action === 'object' && 'raw' in action) {
+    constructCallAndResultFormat(action) {
+        if (typeof action === 'object' && 'raw' in action) {
             const { to: toVariable, value: valueVariable, data: dataVariable } = action.raw;
 
             const to = this.variables[toVariable];
@@ -642,19 +759,50 @@ class Encoder {
                     this.targetContracts[contractName].abi[callABIIndex]
                 );
 
+                this.resultToParse[this.callIndex] = {};
+
                 // parse results
                 for (let [resultIndex, result] of Object.entries(splitActionResults)) {
-                    if (!(this.callIndex in this.resultToParse)) {
-                        this.resultToParse[this.callIndex] = {};
-                    }
-
                     this.resultToParse[this.callIndex][resultIndex] = result;
 
                     if (!!this.isAdvanced) {
-                        this.knownCallResultVariables[result] = {
-                            callIndex: this.callIndex,
-                            returndata: this.callResultsByFunction[functionName][resultIndex],
-                        };
+                        const callResult = this.callResultsByFunction[functionName][resultIndex];
+
+                        if (
+                            result.startsWith("[") &&
+                            result.endsWith("]")
+                        ) {
+                            const subResults = result
+                                .slice(1, -1)
+                                .split(',');
+
+                            const {
+                                type: superType,
+                                offset: superOffset
+                            } = callResult;
+
+                            const type = superType.replace("[]", "");
+                            const size = Encoder.typeSizes(type);
+
+                            for (const [subResultIndex, subResult] of Object.entries(subResults)) {
+                                const returndata = {
+                                    type,
+                                    size,
+                                    offset: superOffset + (subResultIndex * size),
+                                };
+
+                                this.knownCallResultVariables[subResult] = {
+                                    callIndex: this.callIndex,
+                                    returndata,
+                                };
+                            }
+
+                        } else {
+                            this.knownCallResultVariables[result] = {
+                                callIndex: this.callIndex,
+                                returndata: callResult,
+                            };
+                        }
                     }
                 }
             }
@@ -663,19 +811,56 @@ class Encoder {
         }
     }
 
-    static getSizesAndOffsetsFromTypes(types, includeSelector) {
+    getSizesAndOffsetsFromTypes(functionName, types, includeSelector) {
         if (types.length === 0) {
             return [];
         }
 
+        let elementTotals = {};
+
+
+        if (functionName in this.typedArrayElementTotals) {
+            const elementCategory = !!includeSelector
+                ? 'argumentElementTotals'
+                : 'returnElementTotals';
+
+            elementTotals = this.typedArrayElementTotals[functionName][elementCategory];
+        }
+
         const sizes = types.map(
-            Encoder.typeSizes
+            (type, i) => (
+                i in elementTotals
+                    ? elementTotals[i] * Encoder.typeSizes('uint256') // TODO: use actual typed array element type
+                    : Encoder.typeSizes(type)
+            )
         );
 
-        const extraOffset = includeSelector ? 4 : 0;
-        const offsets = sizes.map(
-            (sum => value => sum += value)(-sizes[0] + extraOffset)
+        const referenceEncoding = ethers.utils.defaultAbiCoder.encode(
+            types,
+            types.map((type, i) => Encoder.typeZeroPaddings(
+                type,
+                i in elementTotals
+                    ? elementTotals[i]
+                    : null
+            ))
         );
+
+        const referenceChunks = referenceEncoding
+            .replace("0x", "")
+            .slice(0, 64 * types.length)
+            .match(/.{1,64}/g)
+            .map(x => ethers.BigNumber.from(`0x${x}`).toNumber());
+
+        const extraOffset = includeSelector ? 4 : 0;
+
+        const offsets = Array(types.length).fill(32).map(
+            (sum => value => sum += value)(-32 + extraOffset)
+        );
+        for (let i = 0; i < types.length; i++) {
+            if (i in elementTotals) {
+                offsets[i] = referenceChunks[i] + 32 + extraOffset;
+            }
+        }
 
         return types.map(
             (type, i) => ({
@@ -686,35 +871,58 @@ class Encoder {
         );
     }
 
+    static parseCallArgumentTypes(definition) {
+        return definition.split(' ')[3] === 'fallback'
+            ? []
+            : definition
+                .split(" => ")[0]
+                .replace(":payable", "")
+                .split("(")[1]
+                .slice(0, -1)
+                .split(",")
+                .filter(x => x)
+                .map(x => x.trim(" "));
+    }
+
+    static parseCallReturnTypes(definition) {
+        return (definition.split(' => ')[1] || '')
+            .split(' ')
+            .filter(x => x);
+    }
+
     constructCallsAndResultsFormat() {
-        this.calls = [];
+        this.calls = this.calls || [];
         this.callABIs = [];
         this.resultToParse = {};
 
         const { actions, definitions } = this.actionScript;
 
+        this.actions = this.flatten(actions);
+
         this.callArgumentsByFunction = {};
         this.callResultsByFunction = {};
 
         if (!!this.isAdvanced) {
-            const definitionCallArguments = definitions
-                .filter(definition => definition.startsWith("Function "))
+            const functionDefinitions = new Set(
+                this.actions.map(action => action.split(' ')[1])
+            );
+
+            const relevantDefinitions = definitions.filter(definition => (
+                definition.startsWith("Function ") &&
+                functionDefinitions.has(definition.split(' ')[1])
+            ));
+
+            this.deriveTypedArrayElementTotals();
+
+            const definitionCallArguments = relevantDefinitions
                 .map(definition => {
                     const functionName = definition.split(' ')[1];
-                    const callArgumentTypes = definition.split(' ')[3] === 'fallback'
-                        ? []
-                        : definition
-                            .split(" => ")[0]
-                            .replace(":payable", "")
-                            .split("(")[1]
-                            .slice(0, -1)
-                            .split(",")
-                            .filter(x => x)
-                            .map(x => x.trim(" "));
+                    const callArgumentTypes = Encoder.parseCallArgumentTypes(definition);
 
                     return [
                         functionName,
-                        Encoder.getSizesAndOffsetsFromTypes(
+                        this.getSizesAndOffsetsFromTypes(
+                            functionName,
                             callArgumentTypes,
                             true
                         )
@@ -729,17 +937,15 @@ class Encoder {
                 ...ERC20_CALL_ARGUMENTS
             };
 
-            const definitionCallResults = definitions
-                .filter(definition => definition.startsWith("Function "))
+            const definitionCallResults = relevantDefinitions
                 .map(definition => {
                     const functionName = definition.split(' ')[1];
-                    const callReturnTypes = (definition.split(' => ')[1] || '')
-                        .split(' ')
-                        .filter(x => x);
+                    const callReturnTypes = Encoder.parseCallReturnTypes(definition);
 
                     return [
                         functionName,
-                        Encoder.getSizesAndOffsetsFromTypes(
+                        this.getSizesAndOffsetsFromTypes(
+                            functionName,
                             callReturnTypes,
                             false
                         )
@@ -756,7 +962,7 @@ class Encoder {
         }
 
         this.callIndex = this.callIndex || 0;
-        for (let action of actions) {
+        for (let action of this.actions) {
             this.constructCallAndResultFormat(action);
         }
     }

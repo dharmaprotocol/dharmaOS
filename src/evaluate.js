@@ -887,16 +887,6 @@ async function evaluateSequence(
         events = await parseEvents(execution.logs, wallet);
     }
 
-    console.log({
-        success,
-        results,
-        resultsBySequence,
-        events,
-        parsedReturnData,
-        revertReason,
-        wallet: wallet.address,
-    });
-
     return {
         success,
         results,

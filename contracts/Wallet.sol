@@ -233,6 +233,20 @@ contract Wallet is WalletInterface {
       )
     );
 
+    // Note: there are more efficient ways to check for revert reasons.
+    if (
+      rawCallResults.length > 68 && // prefix (4) + position (32) + length (32)
+      rawCallResults[0] == bytes1(0x08) &&
+      rawCallResults[1] == bytes1(0xc3) &&
+      rawCallResults[2] == bytes1(0x79) &&
+      rawCallResults[3] == bytes1(0xa0)
+    ) {
+      assembly {
+        returndatacopy(0, 0, returndatasize())
+        revert(0, returndatasize())
+      }
+    }
+
     // Ensure that self-call context has been cleared.
     if (!externalOk) {
       delete _selfCallContext;
@@ -464,6 +478,20 @@ contract Wallet is WalletInterface {
     // Note: this should never be the case, but check just to be extra safe.
     if (mustBeFalse) {
       revert("Simulation code must revert!");
+    }
+
+    // Note: there are more efficient ways to check for revert reasons.
+    if (
+      rawCallResults.length > 68 && // prefix (4) + position (32) + length (32)
+      rawCallResults[0] == bytes1(0x08) &&
+      rawCallResults[1] == bytes1(0xc3) &&
+      rawCallResults[2] == bytes1(0x79) &&
+      rawCallResults[3] == bytes1(0xa0)
+    ) {
+      assembly {
+        returndatacopy(0, 0, returndatasize())
+        revert(0, returndatasize())
+      }
     }
 
     // Ensure that self-call context has been cleared.
