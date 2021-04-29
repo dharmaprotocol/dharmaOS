@@ -271,15 +271,18 @@ class Encoder {
         return encoder.encode();
     }
 
+    
+
     constructor(actionScript, variables, wallet, isAdvanced = null) {
         this.actionScript = actionScript;
         this.variables = variables;
         this.variables["wallet"] = wallet;
         this.isAdvanced = (
-            isAdvanced !== null
+            isAdvanced === null
                 ? Validator.isAdvanced(actionScript)
                 : !!isAdvanced
         );
+        this.knownCallResultVariables = {};
     }
 
     encode() {
@@ -294,38 +297,30 @@ class Encoder {
         };
     }
 
-    encodeSequence({sequence, variables, wallet}) {
-        this.sequence = sequence;
-        this.variables = variables;
-        this.variables["wallet"] = wallet;
-
-        this.isAdvanced = sequence.map(s => (
-            !!s.resultsToApply && s.resultsToApply.length > 0 ||
-            Validator.isAdvanced(s.actionScript)
+    static encodeSequence({sequence, variables, wallet}) {
+        const isAdvanced = sequence.some(({ actionScript, resultsToApply }) => (
+            !!resultsToApply && resultsToApply.length > 0 ||
+            Validator.isAdvanced(actionScript)
         ));
-
-        resultsToApply = [
-            {
-                sequenceIndex: 0,
-                result: "abc",
-                variable: "xyz",
-            }
-        ];
 
         let sequenceCallIndex = 0;
         const encoded = [];
         const sequenceKnownCallResultVariables = [];
+        const sequenceCallIndices = [];
         for (const { actionScript, resultsToApply } of sequence) {
             const encoder = new Encoder(
-                actionScript, this.variables, wallet, this.isAdvanced
+                actionScript, variables, wallet, isAdvanced
             );
+
             encoder.parseActionScriptDefinitions();
             encoder.callIndex = sequenceCallIndex;
-            encoder.knownCallResultVariables = {}
+            sequenceCallIndices.push(sequenceCallIndex);
+
             for (const { sequenceIndex, result, variable } of resultsToApply) {
                 const resultToApply = sequenceKnownCallResultVariables[sequenceIndex][result];
                 encoder.knownCallResultVariables[variable] = resultToApply;
             }
+
             encoded.push(encoder.encode());
             sequenceCallIndex = encoder.callIndex;
             sequenceKnownCallResultVariables.push(encoder.knownCallResultVariables);
@@ -341,12 +336,13 @@ class Encoder {
             calls,
             callABIs,
             resultToParse,
-            isAdvanced: this.isAdvanced,
+            isAdvanced,
+            sequenceCallIndices,
         };
     }
 
     static typeSizes(type) {
-        if (!(typeof type === "string")) {
+        if (typeof type !== "string") {
             throw new Error("Types must be formatted as strings.");
         }
 
@@ -366,7 +362,7 @@ class Encoder {
     }
 
     static typeZeroPaddings(type) {
-        if (!(typeof type === "string")) {
+        if (typeof type !== "string") {
             throw new Error("Types must be formatted as strings.");
         }
 
@@ -472,7 +468,7 @@ class Encoder {
                 } else if (payableArg in this.targetContracts) {
                     appliedPayableArg = this.targetContracts[payableArg]
                         .address;
-                } else if (this.isAdvanced && payableArg in this.knownCallResultVariables) {
+                } else if (!!this.isAdvanced && payableArg in this.knownCallResultVariables) {
                     const {
                         callIndex,
                         returndata,
@@ -498,7 +494,7 @@ class Encoder {
                     appliedArgs.push(appliedArg);
                 } else if (arg in this.targetContracts) {
                     appliedArgs.push(this.targetContracts[arg].address);
-                } else if (this.isAdvanced && arg in this.knownCallResultVariables) {
+                } else if (!!this.isAdvanced && arg in this.knownCallResultVariables) {
                     const {
                         callIndex,
                         returndata,
@@ -538,7 +534,7 @@ class Encoder {
                     });
 
                     appliedArgs.push(Encoder.typeZeroPaddings(returndata.type));
-                } else if (arg && arg.startsWith("[") && arg.endsWith("]")) {
+                } else if (!!arg && arg.startsWith("[") && arg.endsWith("]")) {
                     const arrayArgs = arg
                         .slice(1, -1)
                         .split(',')
@@ -656,7 +652,7 @@ class Encoder {
 
                     this.resultToParse[this.callIndex][resultIndex] = result;
 
-                    if (this.isAdvanced) {
+                    if (!!this.isAdvanced) {
                         this.knownCallResultVariables[result] = {
                             callIndex: this.callIndex,
                             returndata: this.callResultsByFunction[functionName][resultIndex],
@@ -669,6 +665,29 @@ class Encoder {
         }
     }
 
+    static getSizesAndOffsetsFromTypes(types, includeSelector) {
+        if (types.length === 0) {
+            return [];
+        }
+
+        const sizes = types.map(
+            Encoder.typeSizes
+        );
+
+        const extraOffset = includeSelector ? 4 : 0;
+        const offsets = sizes.map(
+            (sum => value => sum += value)(-sizes[0] + extraOffset)
+        );
+
+        return types.map(
+            (type, i) => ({
+                type,
+                size: sizes[i],
+                offset: offsets[i],
+            })
+        );
+    }
+
     constructCallsAndResultsFormat() {
         this.calls = [];
         this.callABIs = [];
@@ -679,30 +698,7 @@ class Encoder {
         this.callArgumentsByFunction = {};
         this.callResultsByFunction = {};
 
-        if (this.isAdvanced) {
-            const getSizesAndOffsetsFromTypes = (types, includeSelector) => {
-                if (types.length === 0) {
-                    return [];
-                }
-
-                const sizes = types.map(
-                    Encoder.typeSizes
-                );
-
-                const extraOffset = includeSelector ? 4 : 0;
-                const offsets = sizes.map(
-                    (sum => value => sum += value)(-sizes[0] + extraOffset)
-                );
-
-                return types.map(
-                    (type, i) => ({
-                        type,
-                        size: sizes[i],
-                        offset: offsets[i],
-                    })
-                );
-            }
-
+        if (!!this.isAdvanced) {
             const definitionCallArguments = definitions
                 .filter(definition => definition.startsWith("Function "))
                 .map(definition => {
@@ -720,7 +716,7 @@ class Encoder {
 
                     return [
                         functionName,
-                        getSizesAndOffsetsFromTypes(
+                        Encoder.getSizesAndOffsetsFromTypes(
                             callArgumentTypes,
                             true
                         )
@@ -745,7 +741,7 @@ class Encoder {
 
                     return [
                         functionName,
-                        getSizesAndOffsetsFromTypes(
+                        Encoder.getSizesAndOffsetsFromTypes(
                             callReturnTypes,
                             false
                         )
@@ -762,7 +758,6 @@ class Encoder {
         }
 
         this.callIndex = this.callIndex || 0;
-        this.knownCallResultVariables = this.knownCallResultVariables || {};
         for (let action of actions) {
             this.constructCallAndResultFormat(action);
         }

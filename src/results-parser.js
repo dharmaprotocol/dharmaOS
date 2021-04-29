@@ -161,7 +161,7 @@ class ResultsParser {
                 const {
                     finalResults,
                     newParsedResultsBySequence,
-                } = runOperationsAndFilterResults(
+                } = this.runOperationsAndFilterResults(
                     actionScript, parsedResultsBySequence, i
                 );
 
@@ -204,7 +204,7 @@ class ResultsParser {
 
             const context = {
                 ...this.variables,
-                ...parsedResultsBySequence, // TODO: check if this is correct
+                ...newParsedResultsBySequence[sequenceIndex],
             };
 
             // Skip operation if result already exists
