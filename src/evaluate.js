@@ -258,15 +258,6 @@ const get = async (url, params = {}, retries = 0) => {
     }
 };
 
-const getFilePaths = (dir) => {
-    const dirents = fs.readdirSync(dir, { withFileTypes: true });
-    const files = dirents.map((dirent) => {
-        const res = path.resolve(dir, dirent.name);
-        return dirent.isDirectory() ? this.getFilePaths(res) : res;
-    });
-    return [].concat(...files);
-};
-
 const getABI = async (account, proxyFor) => {
     // first see if a file with account name is in `contractABIs` directory
     const contractABIDir = path.resolve(__dirname, "../contractABIs");
@@ -444,7 +435,7 @@ async function incrementFixedTime(timestamp) {
     return incrementedTimestamp;
 }
 
-async function evaluate(actionScriptName, variables, blockNumber) {
+async function setupForkTestEnvironment(actionScript, variables, blockNumber) {
     await hre.network.provider.request({
         method: "hardhat_reset",
         params: [
@@ -467,7 +458,6 @@ async function evaluate(actionScriptName, variables, blockNumber) {
     const Wallet = await ethers.getContractFactory("Wallet");
     const wallet = await Wallet.deploy(signer.address);
 
-    const actionScript = await Importer.getActionScript(actionScriptName);
     const { definitions, inputs } = actionScript;
 
     const tokenDefinitions = definitions
@@ -690,23 +680,126 @@ async function evaluate(actionScriptName, variables, blockNumber) {
         }
     }
 
-    const encoderArgs = {
-        actionScript,
-        variables,
-        wallet: wallet.address,
+    return {
+        signer,
+        wallet,
     };
+}
+
+async function parseEvents(logs, wallet) {
+    const rawEvents = [];
+    for (let log of logs) {
+        let currentEvent = null;
+        try {
+            // First try parsing the event using the wallet interface itself
+            currentEvent = wallet.interface.parseLog(log);
+        } catch (error) {
+            try {
+                // Next, try parsing it as an ERC20 token
+                const erc20Interface = new ethers.utils.Interface(
+                    ERC20_ABI
+                );
+                currentEvent = erc20Interface.parseLog(log);
+            } catch (error) {
+                try {
+                    // Then try parsing via the contract ABI from Etherscan
+                    const abi = await getABI(log.address);
+                    currentEvent = await parseLogIncludingAnonymous(log, abi);
+                } catch (error) {
+                    try {
+                        // Last-ditch attempt: look for a proxy contract ABI
+                        const etherscanScrapeHTML = await get(
+                            `https://etherscan.io/address/${log.address}#readProxyContract`
+                        );
+                        const search =
+                            "ABI for the implementation contract at";
+                        const relevantLine = etherscanScrapeHTML
+                            .split("\n")
+                            .filter((line) => line.includes(search))
+                            .pop();
+                        if (!!relevantLine) {
+                            const proxyAddress = relevantLine
+                                .match(/<a href='\/address\/(.*?)#code'>/g)[0]
+                                .slice(18, -7);
+
+                            const proxy = ethers.utils.getAddress(proxyAddress);
+                            const proxyABI = await getABI(proxy, log.address);
+                            currentEvent = await parseLogIncludingAnonymous(log, proxyABI);
+                        } else {
+                            console.error(
+                                `ERROR: could not retrieve the contract ABI for contract "${log.address}" — Try setting the file manually.`
+                            );
+                            process.exit(1);
+                        }
+                    } catch (error) {
+                        console.error("ERROR:", error.message);
+                        process.exit(1);
+                    }
+                }
+            }
+        }
+
+        const allArgs = Object.entries({ ...currentEvent.args });
+        const namedArgs = allArgs
+            .slice(allArgs.length / 2)
+            .map(([key, value]) => [
+                key,
+                ethers.BigNumber.isBigNumber(value)
+                    ? value.toString()
+                    : value,
+            ]).reduce(
+                (result, [key, value]) => Object.assign({}, result, {[key]: value}),
+                {}
+            );
+
+        const event = {
+            address: log.address,
+            name: currentEvent.name,
+            args: namedArgs,
+        };
+
+        rawEvents.push(event);
+    }
+
+    const hasFailures = rawEvents.some(
+        (event) =>
+            event.address === wallet.address && event.name === "CallFailure"
+    );
+
+    if (hasFailures) {
+        throw new Error("FAILING!");
+    }
+
+    return rawEvents.filter((event) => event.address !== wallet.address);
+}
+
+async function evaluate(actionScriptName, variables, blockNumber) {
+    const actionScript = await Importer.getActionScript(actionScriptName);
+
+    const { signer, wallet } = await setupForkTestEnvironment(
+        actionScript, variables, blockNumber
+    );
 
     const {
         calls,
         callABIs,
         resultToParse,
         isAdvanced
-    } = Encoder.encode(encoderArgs);
+    } = Encoder.encode({
+        actionScript,
+        variables,
+        wallet: wallet.address,
+    });
 
     const simulateTarget = !isAdvanced ? 'simulate' : 'simulateAdvanced';
     const callResults = await wallet.callStatic[simulateTarget](calls);
 
-    const parserArgs = {
+    const {
+        success,
+        results,
+        revertReason,
+        parsedReturnData
+    } = ResultsParser.parse({
         actionScript,
         calls,
         callResults,
@@ -715,106 +808,14 @@ async function evaluate(actionScriptName, variables, blockNumber) {
         contract: wallet,
         variables,
         isAdvanced,
-    };
-
-    const {
-        success,
-        results,
-        revertReason,
-        parsedReturnData
-    } = ResultsParser.parse(parserArgs);
+    });
 
     let events = {};
     if (!!success) {
         const executeTarget = !isAdvanced ? 'execute' : 'executeAdvanced';
         let execution = await wallet[executeTarget](calls);
         execution = await execution.wait();
-        const logs = execution.logs;
-
-        const rawEvents = [];
-        for (let log of logs) {
-            let currentEvent = null;
-            try {
-                // First try parsing the event using the wallet interface itself
-                currentEvent = wallet.interface.parseLog(log);
-            } catch (error) {
-                try {
-                    // Next, try parsing it as an ERC20 token
-                    const erc20Interface = new ethers.utils.Interface(
-                        ERC20_ABI
-                    );
-                    currentEvent = erc20Interface.parseLog(log);
-                } catch (error) {
-                    try {
-                        // Then try parsing via the contract ABI from Etherscan
-                        const abi = await getABI(log.address);
-                        currentEvent = await parseLogIncludingAnonymous(log, abi);
-                    } catch (error) {
-                        try {
-                            // Last-ditch attempt: look for a proxy contract ABI
-                            const etherscanScrapeHTML = await get(
-                                `https://etherscan.io/address/${log.address}#readProxyContract`
-                            );
-                            const search =
-                                "ABI for the implementation contract at";
-                            const relevantLine = etherscanScrapeHTML
-                                .split("\n")
-                                .filter((line) => line.includes(search))
-                                .pop();
-                            if (!!relevantLine) {
-                                const proxyAddress = relevantLine
-                                    .match(/<a href='\/address\/(.*?)#code'>/g)[0]
-                                    .slice(18, -7);
-
-                                const proxy = ethers.utils.getAddress(proxyAddress);
-                                const proxyABI = await getABI(proxy, log.address);
-                                currentEvent = await parseLogIncludingAnonymous(log, proxyABI);
-                            } else {
-                                console.error(
-                                    `ERROR: could not retrieve the contract ABI for contract "${log.address}" — Try setting the file manually.`
-                                );
-                                process.exit(1);
-                            }
-                        } catch (error) {
-                            console.error("ERROR:", error.message);
-                            process.exit(1);
-                        }
-                    }
-                }
-            }
-
-            const allArgs = Object.entries({ ...currentEvent.args });
-            const namedArgs = allArgs
-                .slice(allArgs.length / 2)
-                .map(([key, value]) => [
-                    key,
-                    ethers.BigNumber.isBigNumber(value)
-                        ? value.toString()
-                        : value,
-                ]).reduce(
-                    (result, [key, value]) => Object.assign({}, result, {[key]: value}),
-                    {}
-                );
-
-            const event = {
-                address: log.address,
-                name: currentEvent.name,
-                args: namedArgs,
-            };
-
-            rawEvents.push(event);
-        }
-
-        const hasFailures = rawEvents.some(
-            (event) =>
-                event.address === wallet.address && event.name === "CallFailure"
-        );
-
-        if (hasFailures) {
-            throw new Error("FAILING!");
-        }
-
-        events = rawEvents.filter((event) => event.address !== wallet.address);
+        events = await parseEvents(execution.logs, wallet);
     }
 
     return {
@@ -827,6 +828,87 @@ async function evaluate(actionScriptName, variables, blockNumber) {
     };
 }
 
+async function evaluateSequence(
+    actionScriptNamesAndResultsToApply,
+    variables,
+    blockNumber
+) {
+    const sequence = await Promise.all(
+        actionScriptNamesAndResultsToApply.map(
+            async ({actionScriptName, resultsToApply = []}) => ({
+                actionScript: await Importer.getActionScript(actionScriptName),
+                resultsToApply,
+            })
+        )
+    );
+
+    const { signer, wallet } = await setupForkTestEnvironment(
+        sequence[0].actionScript, variables, blockNumber
+    );
+
+    const {
+        calls,
+        callABIs,
+        resultToParse,
+        isAdvanced,
+        sequenceCallIndices,
+    } = Encoder.encodeSequence({
+        sequence,
+        variables,
+        wallet: wallet.address,
+    });
+
+    const simulateTarget = !isAdvanced ? 'simulate' : 'simulateAdvanced';
+    const callResults = await wallet.callStatic[simulateTarget](calls);
+
+    const {
+        success,
+        results,
+        revertReason,
+        parsedReturnData,
+        resultsBySequence,
+    } = ResultsParser.parse({
+        actionScript: sequence.map(({actionScript}) => actionScript),
+        calls,
+        callResults,
+        callABIs,
+        resultToParse,
+        contract: wallet,
+        variables,
+        isAdvanced,
+        sequenceCallIndices,
+    });
+
+    let events = {};
+    if (!!success) {
+        const executeTarget = !isAdvanced ? 'execute' : 'executeAdvanced';
+        let execution = await wallet[executeTarget](calls);
+        execution = await execution.wait();
+        events = await parseEvents(execution.logs, wallet);
+    }
+
+    console.log({
+        success,
+        results,
+        resultsBySequence,
+        events,
+        parsedReturnData,
+        revertReason,
+        wallet: wallet.address,
+    });
+
+    return {
+        success,
+        results,
+        resultsBySequence,
+        events,
+        parsedReturnData,
+        revertReason,
+        wallet: wallet.address,
+    };
+}
+
 module.exports = {
     evaluate,
+    evaluateSequence,
 };

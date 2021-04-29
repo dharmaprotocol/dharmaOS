@@ -271,8 +271,6 @@ class Encoder {
         return encoder.encode();
     }
 
-    
-
     constructor(actionScript, variables, wallet, isAdvanced = null) {
         this.actionScript = actionScript;
         this.variables = variables;
