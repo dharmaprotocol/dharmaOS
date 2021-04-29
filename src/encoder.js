@@ -368,7 +368,7 @@ class Encoder {
         const typedArrayIndicesByFunction = definitions
             .filter(definition => definition.startsWith("Function "))
             .map(definition => {
-                const functionName = definition.split(' ')[1];
+                const functionName = definition.split(' ')[1].split(':')[0];
                 const callArgumentTypes = Encoder.parseCallArgumentTypes(definition);
                 const typedArrayArgumentsByIndex = callArgumentTypes
                     .map((e, i) => e.endsWith('[]') ? i : null)
@@ -904,19 +904,19 @@ class Encoder {
 
         if (!!this.isAdvanced) {
             const functionDefinitions = new Set(
-                this.actions.map(action => action.split(' ')[1])
+                this.actions.map(action => action.split(' ')[1].split(':')[0])
             );
 
             const relevantDefinitions = definitions.filter(definition => (
                 definition.startsWith("Function ") &&
-                functionDefinitions.has(definition.split(' ')[1])
+                functionDefinitions.has(definition.split(' ')[1].split(':')[0])
             ));
 
             this.deriveTypedArrayElementTotals();
 
             const definitionCallArguments = relevantDefinitions
                 .map(definition => {
-                    const functionName = definition.split(' ')[1];
+                    const functionName = definition.split(' ')[1].split(':')[0];
                     const callArgumentTypes = Encoder.parseCallArgumentTypes(definition);
 
                     return [
@@ -939,7 +939,7 @@ class Encoder {
 
             const definitionCallResults = relevantDefinitions
                 .map(definition => {
-                    const functionName = definition.split(' ')[1];
+                    const functionName = definition.split(' ')[1].split(':')[0];
                     const callReturnTypes = Encoder.parseCallReturnTypes(definition);
 
                     return [
