@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.3;
+pragma solidity 0.8.4;
 
 
 interface WalletInterface {
@@ -360,7 +360,7 @@ contract Wallet is WalletInterface {
         bytes memory callTargetData = calls[callIndex].data;
 
         // Note: this check could be performed prior to execution.
-        if (callTargetData.length < returnOffset + dataLength) {
+        if (callTargetData.length < callOffset + dataLength) {
           revert("Calldata too short to insert returndata at supplied offset.");
         }
 
@@ -576,7 +576,7 @@ contract Wallet is WalletInterface {
         bytes memory callTargetData = calls[callIndex].data;
 
         // Note: this check could be performed prior to execution.
-        if (callTargetData.length < returnOffset + dataLength) {
+        if (callTargetData.length < callOffset + dataLength) {
           revert("Calldata too short to insert returndata at supplied offset.");
         }
 
