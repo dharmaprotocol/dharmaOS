@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.3;
+pragma solidity 0.8.4;
 
 
 interface WalletInterface {
@@ -233,6 +233,20 @@ contract Wallet is WalletInterface {
       )
     );
 
+    // Note: there are more efficient ways to check for revert reasons.
+    if (
+      rawCallResults.length > 68 && // prefix (4) + position (32) + length (32)
+      rawCallResults[0] == bytes1(0x08) &&
+      rawCallResults[1] == bytes1(0xc3) &&
+      rawCallResults[2] == bytes1(0x79) &&
+      rawCallResults[3] == bytes1(0xa0)
+    ) {
+      assembly {
+        returndatacopy(0, 0, returndatasize())
+        revert(0, returndatasize())
+      }
+    }
+
     // Ensure that self-call context has been cleared.
     if (!externalOk) {
       delete _selfCallContext;
@@ -346,7 +360,7 @@ contract Wallet is WalletInterface {
         bytes memory callTargetData = calls[callIndex].data;
 
         // Note: this check could be performed prior to execution.
-        if (callTargetData.length < returnOffset + dataLength) {
+        if (callTargetData.length < callOffset + dataLength) {
           revert("Calldata too short to insert returndata at supplied offset.");
         }
 
@@ -466,6 +480,20 @@ contract Wallet is WalletInterface {
       revert("Simulation code must revert!");
     }
 
+    // Note: there are more efficient ways to check for revert reasons.
+    if (
+      rawCallResults.length > 68 && // prefix (4) + position (32) + length (32)
+      rawCallResults[0] == bytes1(0x08) &&
+      rawCallResults[1] == bytes1(0xc3) &&
+      rawCallResults[2] == bytes1(0x79) &&
+      rawCallResults[3] == bytes1(0xa0)
+    ) {
+      assembly {
+        returndatacopy(0, 0, returndatasize())
+        revert(0, returndatasize())
+      }
+    }
+
     // Ensure that self-call context has been cleared.
     delete _selfCallContext;
 
@@ -548,7 +576,7 @@ contract Wallet is WalletInterface {
         bytes memory callTargetData = calls[callIndex].data;
 
         // Note: this check could be performed prior to execution.
-        if (callTargetData.length < returnOffset + dataLength) {
+        if (callTargetData.length < callOffset + dataLength) {
           revert("Calldata too short to insert returndata at supplied offset.");
         }
 
