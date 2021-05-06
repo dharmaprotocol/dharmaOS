@@ -24,12 +24,12 @@ jobs:
     - name: Build and validate
       run: yarn build
       env:
-        WEB3_PROVIDER_URL: ${{ secrets.WEB3_PROVIDER_URL }}
+        WEB3_PROVIDER_URLS_BY_CHAINID: ${{ secrets.WEB3_PROVIDER_URLS_BY_CHAINID }}
         ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
     - name: Run tests
       run: yarn test
       env:
-        WEB3_PROVIDER_URL: ${{ secrets.WEB3_PROVIDER_URL }}
+        WEB3_PROVIDER_URLS_BY_CHAINID: ${{ secrets.WEB3_PROVIDER_URLS_BY_CHAINID }}
         ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
         CI_THREAD: ${{ matrix.thread }}
 

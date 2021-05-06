@@ -3,11 +3,12 @@ const { Importer } = require("./importer");
 const { Exporter } = require("./exporter");
 
 const TYPE_CHECKERS = {
-    string: (x) => x && (typeof x === "string" || x instanceof String),
-    array: (x) => x && Array.isArray(x) && typeof x === "object",
-    object: (x) => x && !Array.isArray(x) && typeof x === "object",
-    conditionalObject: (x) => x && !Array.isArray(x) && typeof x === "object" && "if" in x,
-    rawObject: (x) => x && !Array.isArray(x) && typeof x === "object" && "raw" in x,
+    string: (x) => !!x && (typeof x === "string" || x instanceof String),
+    array: (x) => !!x && Array.isArray(x) && typeof x === "object",
+    object: (x) => !!x && !Array.isArray(x) && typeof x === "object",
+    conditionalObject: (x) => !!x && !Array.isArray(x) && typeof x === "object" && "if" in x,
+    rawObject: (x) => !!x && !Array.isArray(x) && typeof x === "object" && "raw" in x,
+    integerGreaterThanZero: (x) => !!x && !Array.isArray(x) && /^[1-9]\d*$/.test(x.toString()),
 };
 
 const VALID_VARIABLE_TYPES = new Set([
@@ -41,6 +42,7 @@ const TOP_LEVEL_FIELDS_AND_TYPES = {
     summary: "string",
     variables: "object",
     results: "object",
+    chainId: "integerGreaterThanZero",
     definitions: "array",
     inputs: "array",
     actions: "array",
@@ -174,6 +176,8 @@ class Validator {
                 );
             }
             if (!TYPE_CHECKERS[type](actionScript[field])) {
+                // TODO: allow for chainId to match a declared variable with the
+                // correct type
                 throw new Error(
                     `Action script "${name}" field "${field}" must be of type "${type}"`
                 );
