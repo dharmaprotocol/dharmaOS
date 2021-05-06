@@ -435,13 +435,46 @@ async function incrementFixedTime(timestamp) {
     return incrementedTimestamp;
 }
 
+function getProviderUrl(chainId) {
+    const providersRaw = process.env.WEB3_PROVIDER_URLS_BY_CHAINID;
+
+    if (!providersRaw) {
+      throw new Error('supply "WEB3_PROVIDER_URLS_BY_CHAINID" as a stringified JSON object');
+    }
+
+    let providers;
+    try {
+      providers = JSON.parse(providersRaw);
+    } catch (e) {
+      throw new Error(`Cannot parse "WEB3_PROVIDER_URLS_BY_CHAINID": ${e.message}`);
+    }
+
+    if (!(typeof providers === 'object' && !Array.isArray(providers))) {
+      throw new Error('"WEB3_PROVIDER_URLS_BY_CHAINID" must be formatted as {chainId: url, ...}');
+    }
+
+    if (Object.keys(providers).length === 0) {
+      throw new Error('No providers found in "WEB3_PROVIDER_URLS_BY_CHAINID"');
+    }
+
+    if (chainId in providers) {
+        return providers[chainId];
+    } else {
+        throw new Error(`Cannot locate chainId "${chainId}"" in "WEB3_PROVIDER_URLS_BY_CHAINID"`);
+    }
+}
+
 async function setupForkTestEnvironment(actionScript, variables, blockNumber) {
+    const { chainId, definitions, inputs } = actionScript;
+
+    const jsonRpcUrl = getProviderUrl(chainId);
+
     await hre.network.provider.request({
         method: "hardhat_reset",
         params: [
             {
                 forking: {
-                    jsonRpcUrl: process.env.WEB3_PROVIDER_URL,
+                    jsonRpcUrl,
                     blockNumber,
                 },
             },
@@ -457,8 +490,6 @@ async function setupForkTestEnvironment(actionScript, variables, blockNumber) {
 
     const Wallet = await ethers.getContractFactory("Wallet");
     const wallet = await Wallet.deploy(signer.address);
-
-    const { definitions, inputs } = actionScript;
 
     const tokenDefinitions = definitions
         .map((d) => d.split(" "))

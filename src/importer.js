@@ -6,6 +6,7 @@ const YAML = require("yaml");
 const TOP_LEVEL_DEFAULTS = {
     variables: {},
     results: {},
+    chainId: 1,
     definitions: [],
     inputs: [],
     operations: [],
