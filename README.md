@@ -37,7 +37,7 @@ The goal for **dharmaOS** is to expand the inventory of supported "actions" a us
 ## Usage
 1. set up `.env` file:
 ```
-WEB3_PROVIDER_URL='<some archive node URL like Alchemy>'
+WEB3_PROVIDER_URLS_BY_CHAINID='{"1":"<ethereum_mainnet_provider_url>","137":"<polygon_mainnet_provider_url>",...}'
 ETHERSCAN_API_KEY='<an Etherscan API key>'
 ```
 
@@ -67,6 +67,7 @@ This file contains 11 required fields:
     - `bool[N]`, `bytesXXX[N]`, `uintXXX[N]`, `intXXX[N]`, `address[N]`, `bool[N][M]`...
     - `bytes`, `string`, `struct(type, type...)`
 - results: a name ⇒ type mapping of values that will be returned by action script
+- chainId: an integer representing the chain to execute the action script against (defaults to 1)
 - definitions: a list of contracts / tokens, functions, and other actions used by the action script (`<definitionName>` is where an arbitrary name is declared for each and is what is used throughout the action script)
     - Contract `<contractName>` `contractAddress`
     - Token `<contractName>` `contractAddress` (same as Contract but adds all ERC20 methods)
@@ -101,6 +102,8 @@ variables:
 
 results:
   yVaultReceivedAmount: uint256
+
+chainId: 1
 
 definitions:
  - Token UNDERLYING suppliedTokenAddress
@@ -139,6 +142,7 @@ description: "Mint ${yVaultReceivedAmount:yVAULT.decimals} ${yVAULT.symbol} usin
    "results": {
       "yVaultReceivedAmount": "uint256"
    },
+   "chainId": 1,
    "definitions": [
       "Token UNDERLYING suppliedTokenAddress",
       "Token yVAULT yVaultAddress",
