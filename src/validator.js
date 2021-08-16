@@ -471,7 +471,37 @@ class Validator {
             );
         }
 
-        const givenArguments = action.split(" => ")[0].split(" ").slice(2);
+        let givenArgumentsString = action.split(" => ")[0].split(" ").slice(2).join(" ");
+
+        let givenArguments = [];
+
+        while (givenArgumentsString) {
+            if (givenArgumentsString.startsWith("(")) {
+                givenArguments.push(
+                    givenArgumentsString.slice(
+                        1,
+                        givenArgumentsString.indexOf(")")
+                    ).split(" ")
+                );
+
+                givenArgumentsString = givenArgumentsString
+                    .slice(givenArgumentsString.indexOf(")") + 1)
+                    .trim();
+            } else if (givenArgumentsString.indexOf(" ") !== -1) {
+                givenArguments.push(
+                    givenArgumentsString.slice(
+                        0,
+                        givenArgumentsString.indexOf(" ")
+                    )
+                );
+                givenArgumentsString = givenArgumentsString
+                    .slice(givenArgumentsString.indexOf(" ") + 1);
+            } else {
+                givenArguments.push(givenArgumentsString);
+                break;
+            }
+        }
+
         let expectedArgumentTypes;
         if (actionFunction in ERC20_FUNCTIONS) {
             expectedArgumentTypes =
@@ -507,12 +537,32 @@ class Validator {
             }
             const functionDefinition = functionDefinitionList.pop();
             const functionSignature = functionDefinition[3];
-            expectedArgumentTypes = functionSignature
+            let functionArguments = functionSignature
                 .slice(
                     functionSignature.indexOf("(") + 1,
-                    functionSignature.indexOf(")")
-                )
+                    functionSignature.lastIndexOf(")")
+                );
+
+            // NOTE: this will not handle nested structs appropriately.
+            while (functionArguments.includes("(")) {
+                functionArguments = `${
+                    functionArguments.slice(0, functionArguments.indexOf("("))
+                }<TUPLE${
+                    functionArguments.slice(
+                        functionArguments.indexOf("(") + 1,
+                        functionArguments.indexOf(")")
+                    ).split(",").join("++")
+                }>${
+                    functionArguments.slice(functionArguments.indexOf(")") + 1)
+                }`;
+            }
+
+            expectedArgumentTypes = functionArguments
                 .split(",")
+                .map((x) => x.startsWith("<TUPLE") && x.endsWith(">")
+                    ? x.slice(6, -1).split("++")
+                    : x
+                )
                 .filter((x) => !!x);
 
             if (functionDefinition[2] !== actionContract) {
@@ -538,6 +588,23 @@ class Validator {
 
         for (let [j, givenArgument] of Object.entries(givenArguments)) {
             const expectedArgumentType = expectedArgumentTypes[j];
+
+            // Handle structs / tuples
+            if (Array.isArray(expectedArgumentType)) {
+                if (!Array.isArray(givenArgument)) {
+                    throw new Error(
+                        `Action script "${name}" variable #${j + 1} on function ${actionFunction} is not a struct type`
+                    );
+                }
+
+                if (expectedArgumentType.length !== givenArgument.length) {
+                    throw new Error(
+                        `Action script "${name}" struct variable #${j + 1} on function ${actionFunction} expects ${expectedArgumentType.length} elements but ${givenArgument.length} are given`
+                    );
+                }
+
+                // TODO: validate struct arg types
+            }
 
             if (givenArgument in variables) {
                 if (variables[givenArgument] !== expectedArgumentType) {
