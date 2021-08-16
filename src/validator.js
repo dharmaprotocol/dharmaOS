@@ -19,7 +19,8 @@ const VALID_VARIABLE_TYPES = new Set([
     "uint8",
     "uint16",
     "int128",
-    "bytes"
+    "bytes",
+    "bytes32[]",
 ]);
 
 const INPUT_SELECTORS = new Set([
