@@ -14,10 +14,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Use Node.js v15
+    - name: Use Node.js v16
       uses: actions/setup-node@v1
       with:
-        node-version: 15
+        node-version: 16
         registry-url: 'https://registry.npmjs.org'
     - name: Install
       run: yarn install --frozen-lockfile
@@ -38,10 +38,10 @@ jobs:
     needs: build
     steps:
     - uses: actions/checkout@v2
-    - name: Use Node.js v15
+    - name: Use Node.js v16
       uses: actions/setup-node@v1
       with:
-        node-version: 15
+        node-version: 16
         registry-url: 'https://registry.npmjs.org'
     - name: Install
       run: yarn install --frozen-lockfile
