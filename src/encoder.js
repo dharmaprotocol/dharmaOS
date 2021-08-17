@@ -1,6 +1,8 @@
 const { Validator } = require("./validator");
 const ethers = require("ethers");
 
+ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
+
 const ERC20_ABI = [
     {
         constant: true,
@@ -399,17 +401,46 @@ class Encoder {
                 const returnElementTotals = {};
 
                 const functionName = action.split(' ')[1].split(':')[0];
-                const argumentValues = action
-                    .split(' => ')[0]
-                    .split(' ')
-                    .slice(2)
+
+                let givenArgumentsString = action.split(" => ")[0].split(" ").slice(2).join(" ");
+
+                let givenArguments = [];
+
+                while (givenArgumentsString) {
+                    if (givenArgumentsString.startsWith("(")) {
+                        givenArguments.push(
+                            givenArgumentsString.slice(
+                                1,
+                                givenArgumentsString.indexOf(")")
+                            ).split(" ")
+                        );
+
+                        givenArgumentsString = givenArgumentsString
+                            .slice(givenArgumentsString.indexOf(")") + 1)
+                            .trim();
+                    } else if (givenArgumentsString.indexOf(" ") !== -1) {
+                        givenArguments.push(
+                            givenArgumentsString.slice(
+                                0,
+                                givenArgumentsString.indexOf(" ")
+                            )
+                        );
+                        givenArgumentsString = givenArgumentsString
+                            .slice(givenArgumentsString.indexOf(" ") + 1);
+                    } else {
+                        givenArguments.push(givenArgumentsString);
+                        break;
+                    }
+                }
+
+                const argumentValues = givenArguments
                     .filter(x => x)
-                    .map(x => x.trim(" "));
+                    .map(x => typeof x === "string" ? x.trim(" ") : x);
 
                 const returnValues = (action.split(' => ')[1] || '')
                     .split(' ')
                     .filter(x => x)
-                    .map(x => x.trim(" "));
+                    .map(x => typeof x === "string" ? x.trim(" ") : x);
 
                 const {
                     typedArrayArgumentsByIndex,
@@ -419,7 +450,7 @@ class Encoder {
                 for (const i of typedArrayArgumentsByIndex) {
                     const argumentValue = argumentValues[i];
                     // Note: nested arrays are not yet supported.
-                    if (argumentValue.startsWith("[") && argumentValue.endsWith("]")) {
+                    if (typeof argumentValue === "string" && argumentValue.startsWith("[") && argumentValue.endsWith("]")) {
                         argumentElementTotals[i] = argumentValue.split(",").length;
                     }
                 }
@@ -427,7 +458,7 @@ class Encoder {
                 for (const i of typedArrayReturnsByIndex) {
                     const returnValue = returnValues[i];
                     // Note: nested arrays are not yet supported.
-                    if (returnValue.startsWith("[") && returnValue.endsWith("]")) {
+                    if (typeof returnValue === "string" && returnValue.startsWith("[") && returnValue.endsWith("]")) {
                         returnElementTotals[i] = returnValue.split(",").length;
                     }
                 }
@@ -564,7 +595,42 @@ class Encoder {
                 .split(" ")
                 .filter(x => x);
 
-            let [contractName, functionName, ...args] = splitActionCalls.split(
+            let givenArgumentsString = splitActionCalls.split(" ").slice(2).join(" ");
+
+            let givenArguments = [];
+
+            while (givenArgumentsString) {
+                if (givenArgumentsString.startsWith("(")) {
+                    givenArguments.push(
+                        givenArgumentsString.slice(
+                            1,
+                            givenArgumentsString.indexOf(")")
+                        ).split(" ")
+                    );
+
+                    givenArgumentsString = givenArgumentsString
+                        .slice(givenArgumentsString.indexOf(")") + 1)
+                        .trim();
+                } else if (givenArgumentsString.indexOf(" ") !== -1) {
+                    givenArguments.push(
+                        givenArgumentsString.slice(
+                            0,
+                            givenArgumentsString.indexOf(" ")
+                        )
+                    );
+                    givenArgumentsString = givenArgumentsString
+                        .slice(givenArgumentsString.indexOf(" ") + 1);
+                } else {
+                    givenArguments.push(givenArgumentsString);
+                    break;
+                }
+            }
+
+            let args = givenArguments
+                .filter(x => x)
+                .map(x => typeof x === "string" ? x.trim(" ") : x);
+
+            let [contractName, functionName] = splitActionCalls.split(
                 " "
             );
 
@@ -604,7 +670,20 @@ class Encoder {
             }
 
             for (let [argIndex, arg] of Object.entries(args)) {
-                if (arg in this.variables) {
+                // handle structs (TODO: no support for advanced call insertion)
+                if (Array.isArray(arg)) {
+                    const subArgs = [];
+                    for (let subArg of arg) {
+                        if (subArg in this.variables) {
+                            subArgs.push(this.variables[subArg]);
+                        } else if (subArg in this.targetContracts) {
+                            subArgs.push(this.targetContracts[subArg].address);
+                        } else {
+                            subArgs.push(subArg);
+                        }
+                    }
+                    appliedArgs.push(subArgs);
+                } else if (arg in this.variables) {
                     const appliedArg = this.variables[arg];
                     appliedArgs.push(appliedArg);
                 } else if (arg in this.targetContracts) {
@@ -649,7 +728,7 @@ class Encoder {
                     });
 
                     appliedArgs.push(Encoder.typeZeroPaddings(returndata.type));
-                } else if (!!arg && arg.startsWith("[") && arg.endsWith("]")) {
+                } else if (!!arg && typeof arg === "string" && arg.startsWith("[") && arg.endsWith("]")) {
                     const arrayArgs = arg
                         .slice(1, -1)
                         .split(',')
@@ -871,6 +950,7 @@ class Encoder {
         );
     }
 
+    // TODO: support tuples (needed for advanced calls)
     static parseCallArgumentTypes(definition) {
         return definition.split(' ')[3] === 'fallback'
             ? []
@@ -881,7 +961,7 @@ class Encoder {
                 .slice(0, -1)
                 .split(",")
                 .filter(x => x)
-                .map(x => x.trim(" "));
+                .map(x => typeof x === "string" ? x.trim(" ") : x);
     }
 
     static parseCallReturnTypes(definition) {
@@ -1073,13 +1153,55 @@ class Encoder {
                         }
 
                         const allContractFunctionArgumentString = functionDefinitionWithArguments
-                            .split("(")[1]
-                            .slice(0, -1);
+                            .slice(
+                                functionDefinitionWithArguments.indexOf("(") + 1,
+                                functionDefinitionWithArguments.lastIndexOf(")")
+                            );
 
-                        const contractFunctionArguments =
-                            allContractFunctionArgumentString.length > 0
-                                ? allContractFunctionArgumentString.split(",")
-                                : null;
+                        let contractFunctionArguments;
+                        if (allContractFunctionArgumentString.length === 0) {
+                            contractFunctionArguments = null;
+                        } else if (!allContractFunctionArgumentString.includes("(")) {
+                            contractFunctionArguments = allContractFunctionArgumentString.split(",");
+                        } else {
+                            // handle structs
+
+                            let givenArgumentsString = allContractFunctionArgumentString;
+
+                            let givenArguments = [];
+                            while (givenArgumentsString) {
+                                if (givenArgumentsString.startsWith(",")) {
+                                    givenArgumentsString = givenArgumentsString.slice(1);
+                                } else if (givenArgumentsString.startsWith("(")) {
+                                    givenArguments.push(
+                                        givenArgumentsString.slice(
+                                            1,
+                                            givenArgumentsString.indexOf(")")
+                                        )
+                                        .split(",")
+                                        .map(x => typeof x === "string" ? x.trim() : x)
+                                    );
+
+                                    givenArgumentsString = givenArgumentsString
+                                        .slice(givenArgumentsString.indexOf(")") + 1)
+                                        .trim();
+                                } else if (givenArgumentsString.indexOf(",") !== -1) {
+                                    givenArguments.push(
+                                        givenArgumentsString.slice(
+                                            0,
+                                            givenArgumentsString.indexOf(",")
+                                        )
+                                    );
+                                    givenArgumentsString = givenArgumentsString
+                                        .slice(givenArgumentsString.indexOf(",") + 1);
+                                } else {
+                                    givenArguments.push(givenArgumentsString);
+                                    break;
+                                }
+                            }
+
+                            contractFunctionArguments = givenArguments;
+                        }
 
                         functionABI = {
                             constant: false,
@@ -1098,11 +1220,28 @@ class Encoder {
                             type: "function",
                             inputs: !!contractFunctionArguments
                                 ? Object.entries(contractFunctionArguments).map(
-                                      ([i, arg]) => ({
-                                          name: `${contractFunctionName}Argument${i}`,
-                                          type: arg.trim(" "),
-                                          internalType: arg.trim(" "),
-                                      })
+                                    ([i, arg]) => {
+                                        if (typeof arg === "string") {
+                                            return ({
+                                                name: `${contractFunctionName}Argument${i}`,
+                                                type: arg.trim(" "),
+                                                internalType: arg.trim(" "),
+                                            })
+                                        } else if (Array.isArray(arg)) {
+                                            return ({
+                                                name: `${contractFunctionName}Argument${i}`,
+                                                type: "tuple",
+                                                internalType: "tuple",
+                                                components: Object.entries(arg).map(([j, subArg]) => ({
+                                                    name: `${contractFunctionName}Argument${i}SubArg${j}`,
+                                                    type: subArg.trim(" "),
+                                                    internalType: subArg.trim(" "),
+                                                })),
+                                            });
+                                        } else {
+                                            throw new Error("Invalid input arg type");
+                                        }
+                                    }
                                   )
                                 : [],
                         };
