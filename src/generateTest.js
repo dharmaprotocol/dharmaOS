@@ -215,6 +215,21 @@ const getInputs = async () => {
                                     "Invalid bytes argument, try again..."
                                 );
                             }
+                        } else if (variableType === "bytes32[]") {
+                            try {
+                                const candidateResult = JSON.parse(input);
+                                result = candidateResult.every(x => (
+                                    x.startsWith("0x") &&
+                                    ethers.utils.isHexString(x)
+                                ));
+                            } catch (e) {}
+
+                            if (!result) {
+                                console.log();
+                                console.error(
+                                    "Invalid bytes32[] argument, try again..."
+                                );
+                            }
                         } else if (
                             variableType.startsWith("bytes") &&
                             !variableType.includes("[")
@@ -302,6 +317,8 @@ const getInputs = async () => {
                 variableValue === true ||
                 truePossibilities.has(variableValue.toLowerCase())
             );
+        } else if (variableType.endsWith('[]')) {
+            variableValue = JSON.parse(variableValue);
         }
 
         variables[variableName] = variableValue;
