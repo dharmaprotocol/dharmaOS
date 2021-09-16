@@ -1,9 +1,9 @@
 {
   "name": "dharma-os",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "A collection of \"Action Scripts\" for execution via the Dharma Smart Wallet.",
   "main": "index.js",
-  "repository": "https://github.com/dharmaprotocol/action-scripts",
+  "repository": "https://github.com/dharmaprotocol/dharmaOS",
   "author": "@0age + @carlosflrs",
   "license": "MIT",
   "private": false,
@@ -17,17 +17,6 @@
     "js-sha3": "^0.8.0",
     "yaml": "^1.10.0"
   },
-  "resolutions": {
-    "hardhat/mocha": "^8.0.0"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "*.{js,css,md}": "prettier --write"
-  },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "2.0.2",
     "axios": "^0.21.1",
@@ -38,5 +27,16 @@
     "inquirer": "^8.1.2",
     "lint-staged": ">=10",
     "prettier": "^2.2.1"
+  },
+  "resolutions": {
+    "hardhat/mocha": "^8.0.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,css,md}": "prettier --write"
   }
 }
