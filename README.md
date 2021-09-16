@@ -1,4 +1,10 @@
 # 🔌 dharmaOS
+
+[![npm](https://img.shields.io/npm/v/dharma-os?color=blue)](https://www.npmjs.com/package/dharma-os)
+[![License](https://img.shields.io/github/license/dharmaprotocol/dharmaOS.svg?colorB=brightgreen)](https://github.com/dharmaprotocol/dharmaOS/blob/master/LICENSE.md)
+[![Build Status](https://img.shields.io/github/workflow/status/dharmaprotocol/dharmaOS/Test%20&%20Publish)](https://github.com/dharmaprotocol/dharmaOS/actions/workflows/publish.yml)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+
 **dharmaOS** is an open SDK that allows developers to connect any EVM protocol action to Dharma's high-grade fiat
 on and off ramps.  The **dharmaOS** system ingests simple YAML files called "action scripts" that can be either manually or programmatically generated.
 
@@ -10,7 +16,7 @@ Given a properly-formatted "action script":
 - Actions can similarly ingest tokens that are in escrow "lock up" in the app, and tokens outputted by the action will inherit the input tokens' escrow period.
 
 **dharmaOS** is currently in **invite-only alpha mode** — you can request an invite to the SDK [here](https://dharma-feedback.typeform.com/to/cWofOmkP).
-Throughout Q2 of 2021, our goal is to open up self-service access to **dharmaOS** to the general public — replicating an experience akin to the Apple App Store, but housed in a Coinbase-like crypto wallet. 
+Our goal is to open up self-service access to **dharmaOS** to the general public — replicating an experience akin to the Apple App Store, but housed in a Coinbase-like crypto wallet. 
 
 # 🏦 The Problem With Fiat On-Ramps in Web3
 In order to understand **dharmaOS**, it's important to understand the secret sauce behind Dharma's onramp.  In crypto-land,
