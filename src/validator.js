@@ -67,8 +67,6 @@ const RAW_FIELDS_AND_TYPES = {
 
 const RESERVED_KEYWORDS = new Set(["wallet", "ETHER"]);
 
-const RESERVED_ACTION_SCRIPT_NAMES = { SEND_TRANSACTION: "SEND_TRANSACTION" };
-
 class Validator {
     static async call() {
         const actionScripts = await Importer.getActionScripts();
@@ -757,7 +755,8 @@ class Validator {
     static validateRawAction(action, index, actionScript) {
         const { name } = actionScript;
 
-        if (name !== RESERVED_ACTION_SCRIPT_NAMES.SEND_TRANSACTION) {
+        // Sanity check — ensure that action script name is SEND_[X_]TRANSACTION
+        if (!name.startsWith("SEND_") || !name.endsWith("_TRANSACTION")) {
             throw new Error(
                 `Action script "${name}" is not allowed to define a raw object`
             );
