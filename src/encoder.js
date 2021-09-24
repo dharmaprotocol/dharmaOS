@@ -983,18 +983,28 @@ class Encoder {
         this.callResultsByFunction = {};
 
         if (!!this.isAdvanced) {
-            const functionDefinitions = new Set(
-                this.actions.map(action => action.split(' ')[1].split(':')[0])
+            const functionDefinitionsArray = this.actions.map(
+                action => action.split(' ')[1].split(':')[0]
             );
+
+            const functionDefinitions = new Set(functionDefinitionsArray);
 
             const relevantDefinitions = definitions.filter(definition => (
                 definition.startsWith("Function ") &&
                 functionDefinitions.has(definition.split(' ')[1].split(':')[0])
             ));
 
+            // Filter out definitions that are only used by the first call, as
+            // advanced calls cannot insert calldata into that call regardless.
+            const subsequentFunctionDefinitions = new Set(functionDefinitionsArray.slice(1));
+            const relevantDefinitionsForCallArguments = definitions.filter(definition => (
+                definition.startsWith("Function ") &&
+                subsequentFunctionDefinitions.has(definition.split(' ')[1].split(':')[0])
+            ));
+
             this.deriveTypedArrayElementTotals();
 
-            const definitionCallArguments = relevantDefinitions
+            const definitionCallArguments = relevantDefinitionsForCallArguments
                 .map(definition => {
                     const functionName = definition.split(' ')[1].split(':')[0];
                     const callArgumentTypes = Encoder.parseCallArgumentTypes(definition);
