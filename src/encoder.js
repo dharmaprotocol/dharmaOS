@@ -708,6 +708,17 @@ class Encoder {
                         );
                     }
 
+                    if (calldata.size === null || calldata.offset === null) {
+                        if (this.error) {
+                            const error = this.error;
+                            throw error;
+                        } else {
+                            throw new Error(
+                                `arg "${arg}" calldata could not be derived`
+                            );
+                        }
+                    }
+
                     if (calldata.size !== returndata.size) {
                         throw new Error(
                             `arg "${
@@ -890,13 +901,12 @@ class Encoder {
         }
     }
 
-    getSizesAndOffsetsFromTypes(functionName, types, includeSelector) {
+    getSizesAndOffsetsFromTypes(functionName, types, includeSelector, catchError = false) {
         if (types.length === 0) {
             return [];
         }
 
         let elementTotals = {};
-
 
         if (functionName in this.typedArrayElementTotals) {
             const elementCategory = !!includeSelector
@@ -906,13 +916,28 @@ class Encoder {
             elementTotals = this.typedArrayElementTotals[functionName][elementCategory];
         }
 
-        const sizes = types.map(
-            (type, i) => (
-                i in elementTotals
-                    ? elementTotals[i] * Encoder.typeSizes('uint256') // TODO: use actual typed array element type
-                    : Encoder.typeSizes(type)
-            )
-        );
+        let sizes;
+
+        try {
+            sizes = types.map(
+                (type, i) => (
+                    i in elementTotals
+                        ? elementTotals[i] * Encoder.typeSizes('uint256') // TODO: use actual typed array element type
+                        : Encoder.typeSizes(type)
+                )
+            );
+        } catch (error) {
+            if (catchError) {
+                this.error = error;
+                return types.map(type => ({
+                    type,
+                    size: null,
+                    offset: null,
+                }));
+            }
+
+            throw error;
+        }
 
         const referenceEncoding = ethers.utils.defaultAbiCoder.encode(
             types,
@@ -1004,6 +1029,7 @@ class Encoder {
                         this.getSizesAndOffsetsFromTypes(
                             functionName,
                             callArgumentTypes,
+                            true,
                             true
                         )
                     ];
