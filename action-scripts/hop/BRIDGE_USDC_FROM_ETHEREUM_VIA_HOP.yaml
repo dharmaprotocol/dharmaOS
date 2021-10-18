@@ -1,0 +1,32 @@
+name: "BRIDGE_USDC_FROM_ETHEREUM_VIA_HOP"
+
+summary: "Bridge USD Coin from Ethereum to other chains via Hop Exchange"
+
+variables:
+  toChain: uint256
+  to: address
+  amount: uint256
+  minimumReceivedAmount: uint256
+
+results:
+
+definitions:
+ - Token USDC 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+ - Contract BRIDGE 0x3666f603Cc164936C1b87e207F36BEBa4AC5f18a
+ - Function bridge BRIDGE sendToL2(uint256,address,uint256,uint256,uint256,address,uint256)
+
+inputs:
+ - USDC: amount
+
+actions:
+ - USDC approve BRIDGE amount
+ - BRIDGE bridge toChain to amount minimumReceivedAmount 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 0x0000000000000000000000000000000000000000 0
+
+operations:
+
+outputs:
+
+associations:
+  - USDC: minimumReceivedAmount
+
+description: "Bridge ${amount:USDC.decimals} ${USDC.symbol} from Ethereum to ${to} on chain ID ${toChain}"
