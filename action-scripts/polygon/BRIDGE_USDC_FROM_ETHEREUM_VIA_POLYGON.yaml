@@ -1,0 +1,31 @@
+name: "BRIDGE_USDC_FROM_ETHEREUM_VIA_POLYGON"
+
+summary: "Bridge USDC from Ethereum to Polygon via standard bridge"
+
+variables:
+  to: address
+  amount: uint256
+  depositData: bytes
+
+results:
+
+definitions:
+ - Token USDC 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+ - Contract PREDICATE_PROXY 0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf
+ - Contract BRIDGE 0xA0c68C638235ee32657e8f720a23ceC1bFc77C77
+ - Function bridge BRIDGE depositFor(address,address,bytes)
+
+inputs:
+ - USDC: amount
+
+actions:
+ - USDC approve PREDICATE_PROXY amount
+ - BRIDGE bridge to USDC depositData
+
+operations:
+
+outputs:
+
+associations:
+
+description: "Bridge ${amount:USDC.decimals} ${USDC.symbol} from Ethereum to ${to} on Polygon"
