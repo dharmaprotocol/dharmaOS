@@ -1,0 +1,43 @@
+name: BRIDGE_USDC_FROM_ETHEREUM_VIA_POLYGON
+blockNumber: 13488880
+tests:
+  - name: Bridge USDC from Ethereum to Polygon via standard bridge
+    success: true
+    variables:
+      to: "0x7e4A8391C728fEd9069B2962699AB416628B19Fa"
+      amount: "1000000"
+      depositData: "0x00000000000000000000000000000000000000000000000000000000000F4240"
+    results: {}
+    events:
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Approval
+        args:
+          owner: wallet
+          spender: "0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf"
+          value: "1000000"
+      - address: "0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf"
+        name: LockedERC20
+        args:
+          depositor: wallet
+          depositReceiver: "0x7e4A8391C728fEd9069B2962699AB416628B19Fa"
+          rootToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+          amount: "1000000"
+      - address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        name: Transfer
+        args:
+          from: wallet
+          to: "0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf"
+          value: "1000000"
+      - address: "0x28e4F3a7f651294B9564800b2D01f35189A5bFbE"
+        name: StateSynced
+        args:
+          id: "1003721"
+          contractAddress: "0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa"
+          data: "0x87a7811f4bfedea3d341ad165680ae306b01aaeacc205d227629cf157dd9f821000000\
+            0000000000000000000000000000000000000000000000000000000040000000000\
+            00000000000000000000000000000000000000000000000000000a0000000000000\
+            0000000000007e4a8391c728fed9069b2962699ab416628b19fa000000000000000\
+            000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000\
+            0000000000000000000000000000000000000000000060000000000000000000000\
+            0000000000000000000000000000000000000000020000000000000000000000000\
+            00000000000000000000000000000000000f4240"
