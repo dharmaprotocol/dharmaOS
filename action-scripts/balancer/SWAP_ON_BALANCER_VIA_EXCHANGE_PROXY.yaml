@@ -16,14 +16,19 @@ definitions:
  - Token SOLD soldTokenAddress
  - Token BOUGHT boughtTokenAddress
  - Contract BALANCER_EXCHANGE_PROXY 0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21
- - Function swap BALANCER_EXCHANGE_PROXY smartSwapExactIn(address,address,uint256,uint256,uint256) => uint256
+ - Function swap BALANCER_EXCHANGE_PROXY smartSwapExactIn(address,address,uint256,uint256,uint256):payable => uint256
 
 inputs:
  - SOLD: soldTokenAmount
 
 actions:
- - SOLD approve BALANCER_EXCHANGE_PROXY soldTokenAmount
- - BALANCER_EXCHANGE_PROXY swap soldTokenAddress boughtTokenAddress soldTokenAmount minimumBoughtTokenAmount maximumNumberOfPools => boughtTokenAmount
+ - if:
+    condition: SOLD is ETHER
+    then:
+      - BALANCER_EXCHANGE_PROXY swap:soldTokenAmount soldTokenAddress boughtTokenAddress soldTokenAmount minimumBoughtTokenAmount maximumNumberOfPools => boughtTokenAmount
+    else:
+      - SOLD approve BALANCER_EXCHANGE_PROXY soldTokenAmount
+      - BALANCER_EXCHANGE_PROXY swap soldTokenAddress boughtTokenAddress soldTokenAmount minimumBoughtTokenAmount maximumNumberOfPools => boughtTokenAmount
 
 operations:
 
